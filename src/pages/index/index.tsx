@@ -23,6 +23,7 @@ export default function HomePage() {
   }
 
   const unlockDeep = async () => {
+    if (unlocking) return
     if (deepUnlocked) {
       enterMode('deep')
       return
@@ -55,7 +56,7 @@ export default function HomePage() {
     <View className='page home-page'>
       <View className='page-narrow'>
         <Text className='eyebrow'>辨色谱 · 色觉自测</Text>
-        <Text className='title'>先快速了解，再按需要深入测试</Text>
+        <Text className='title'>先快速测一测，需要时再详细了解</Text>
         <Text className='subtitle'>
           通过动态小圆点图案，了解红绿色和蓝黄色辨别表现。无需登录，结果仅保存在当前设备。
         </Text>
@@ -102,12 +103,16 @@ export default function HomePage() {
               观察三个辨色方向的相对表现，提供类型倾向、辨色困难程度和详细报告。
             </Text>
             <Button
-              className='secondary-button mode-action deep-action'
-              loading={unlocking}
-              disabled={unlocking}
+              className={`secondary-button mode-action deep-action ${
+                unlocking ? 'is-loading' : ''
+              }`}
               onClick={unlockDeep}
             >
-              {deepUnlocked ? '开始深度自测' : '看一段广告，解锁深度自测'}
+              {unlocking
+                ? '正在准备广告…'
+                : deepUnlocked
+                  ? '开始深度自测'
+                  : '看一段广告，解锁深度自测'}
             </Button>
             {hasDeepReport && (
               <Text

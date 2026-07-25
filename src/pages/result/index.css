@@ -552,6 +552,11 @@
   box-shadow: none;
 }
 
+.deep-upgrade-button.is-loading {
+  color: var(--muted);
+  background: #eef3f1;
+}
+
 .result-time {
   margin-top: 26rpx;
   color: var(--muted);

@@ -85,17 +85,17 @@ const QUICK_META: Record<
     tone: 'typical'
   },
   'red-green': {
-    headline: '发现红绿色辨别困难线索',
+    headline: '可能存在红绿色辨别困难',
     lead: '红绿相关题目的辨认表现相对较弱，可以通过深度自测进一步观察。',
     tone: 'moderate'
   },
   'blue-yellow': {
-    headline: '发现蓝黄色辨别困难线索',
+    headline: '可能存在蓝黄色辨别困难',
     lead: '蓝黄相关题目的辨认表现相对较弱，可以通过深度自测进一步观察。',
     tone: 'moderate'
   },
   broad: {
-    headline: '多个方向存在辨色困难线索',
+    headline: '可能存在多个方向的辨色困难',
     lead: '红绿和蓝黄相关题目均出现辨认困难，也可能受到屏幕或作答状态影响。',
     tone: 'marked'
   },
@@ -146,6 +146,7 @@ function QuickResultView({ report }: { report: QuickReport }) {
   const [unlocking, setUnlocking] = useState(false)
 
   const startDeep = async () => {
+    if (unlocking) return
     if (isDeepUnlocked()) {
       Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
       return
@@ -182,8 +183,7 @@ function QuickResultView({ report }: { report: QuickReport }) {
         <View className='card quick-explain-card'>
           <Text className='section-title'>这份结果说明什么？</Text>
           <Text className='result-copy'>
-            快速自测用于初步发现辨色困难方向。因为题量较少，本页不区分
-            protan、deutan，也不判断色弱、色盲或具体程度。
+            快速自测只用于初步了解辨色方向。由于题量较少，本结果不区分具体色觉类型，也不能判断是色弱还是色盲及其程度。
           </Text>
           <View className='quick-direction-grid'>
             <View className='quick-direction-item'>
@@ -216,12 +216,16 @@ function QuickResultView({ report }: { report: QuickReport }) {
             进一步观察类型倾向、辨色困难程度和三个辨色方向。
           </Text>
           <Button
-            className='primary-button deep-upgrade-button'
-            loading={unlocking}
-            disabled={unlocking}
+            className={`primary-button deep-upgrade-button ${
+              unlocking ? 'is-loading' : ''
+            }`}
             onClick={startDeep}
           >
-            {isDeepUnlocked() ? '开始深度自测' : '看一段广告，解锁深度自测'}
+            {unlocking
+              ? '正在准备广告…'
+              : isDeepUnlocked()
+                ? '开始深度自测'
+                : '看一段广告，解锁深度自测'}
           </Button>
         </View>
 
@@ -340,7 +344,7 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
           </View>
           <Text className='diagnosis-question'>结果说明</Text>
           <Text className='diagnosis-text'>
-            本次结果反映你在当前屏幕条件下的辨色表现。如需用于体检或资格判定，请以标准色觉检查结果为准。
+            本次结果反映你在当前屏幕条件下的辨色表现，可提供类型倾向和辨色困难程度，但不能可靠判断是色弱还是色盲及其医学程度。如需用于体检或资格判定，请以标准色觉检查结果为准。
           </Text>
         </View>
 

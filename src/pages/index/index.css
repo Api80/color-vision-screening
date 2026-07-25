@@ -85,6 +85,11 @@
   border-color: #b8d9d1;
 }
 
+.deep-action.is-loading {
+  color: var(--muted);
+  background: #f3f6f5;
+}
+
 .mode-history {
   margin-top: 19rpx;
   color: var(--brand-dark);
