@@ -292,7 +292,15 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
   if (isPreliminary) {
     const preliminaryMeta = PRELIMINARY_DEEP_META[report.type]
     const reasons = report.analysisReasons?.length
-      ? report.analysisReasons.map((reason) => reason.message)
+      ? report.analysisReasons.map((reason) => {
+          if (reason.code === 'fast-responses') {
+            return '本次部分题目的作答间隔较短。重新测试时请凭第一眼作答，同时避免连续快速点击。'
+          }
+          if (reason.code === 'incomplete-records') {
+            return '本次未获得完整作答记录，建议重新完成测试。'
+          }
+          return '部分辨色方向还需要更多稳定作答，才能进一步细分。'
+        })
       : (() => {
           const legacyReasons: string[] = []
           const ultraFast = report.records.filter(
@@ -302,7 +310,9 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
             ultraFast >=
             Math.max(8, Math.ceil(report.records.length * 0.25))
           ) {
-            legacyReasons.push('本次部分题目的作答间隔较短。')
+            legacyReasons.push(
+              '本次部分题目的作答间隔较短。重新测试时请凭第一眼作答，同时避免连续快速点击。'
+            )
           }
           const hasUnresolvedAxis = (['l', 'm', 's'] as Axis[]).some(
             (axis) => {
@@ -313,7 +323,9 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
             }
           )
           if (hasUnresolvedAxis) {
-            legacyReasons.push('部分辨色方向尚未形成足够清晰的变化规律。')
+            legacyReasons.push(
+              '部分辨色方向还需要更多稳定作答，才能进一步细分。'
+            )
           }
           return legacyReasons
         })()
@@ -326,25 +338,32 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
           <Text className='result-lead'>{preliminaryMeta.lead}</Text>
 
           <View className='card preliminary-result-card'>
-            <Text className='section-title'>本次结果说明</Text>
+            <Text className='section-title'>本次已生成初步结果</Text>
             <Text className='result-copy'>
-              本次作答已完成，现有结果可以作为当前辨色表现的参考。部分辨色方向的变化规律还不够清晰，因此本次暂不细分具体类型和程度。
+              现有结果可以作为当前辨色表现的参考。由于部分辨色方向的作答信息还不够完整，本次暂不细分具体类型和程度。
             </Text>
           </View>
 
-          <View className='card retry-reasons-card'>
-            <Text className='section-title'>为什么这次只显示初步结果？</Text>
-            {(reasons.length
-              ? reasons
-              : ['部分辨色方向尚未形成足够清晰的变化规律。']
-            ).map((reason) => (
-              <Text className='retry-reason' key={reason}>
-                · {reason}
-              </Text>
-            ))}
-            <Text className='retry-guidance'>
-              如果你希望进一步了解具体类型倾向和困难程度，可以在状态合适时再测一次。
-            </Text>
+          <View className='retry-callout'>
+            <View className='retry-callout-heading'>
+              <Text className='retry-callout-icon'>!</Text>
+              <View className='retry-callout-heading-copy'>
+                <Text className='retry-callout-title'>建议重新测试</Text>
+                <Text className='retry-callout-copy'>
+                  重新测试可以补充辨色方向的分析信息，有助于获得更完整的类型倾向和困难程度结果。
+                </Text>
+              </View>
+            </View>
+            <View className='retry-reason-list'>
+              {(reasons.length
+                ? reasons
+                : ['部分辨色方向还需要更多稳定作答，才能进一步细分。']
+              ).map((reason) => (
+                <Text className='retry-reason' key={reason}>
+                  {reason}
+                </Text>
+              ))}
+            </View>
           </View>
           <View className='button-stack'>
             <Button
@@ -354,13 +373,13 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
                 Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
               }}
             >
-              重新测试，进一步了解
+              重新测试，完善结果
             </Button>
             <Button
               className='secondary-button'
               onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}
             >
-              返回首页
+              暂时保留本次结果
             </Button>
           </View>
         </View>
