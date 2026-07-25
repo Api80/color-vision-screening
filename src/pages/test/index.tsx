@@ -3,6 +3,7 @@ import Taro, { useLoad, useReady } from '@tarojs/taro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   createAxisState,
+  chooseDeepAxis,
   createDirectionOrder,
   createQuickTrialOrder,
   createTrialOrder,
@@ -10,7 +11,7 @@ import {
   updateAxisState
 } from '@/lib/adaptive'
 import { buildQuickReport, buildReport } from '@/lib/report'
-import { drawStimulus } from '@/lib/stimulus'
+import { drawStimulus, resolveStimulusSeed } from '@/lib/stimulus'
 import { consumePreparation, loadDevice, saveReport } from '@/lib/storage'
 import type {
   Answer,
@@ -24,6 +25,7 @@ import './index.css'
 const CANVAS_ID = 'color-test-canvas'
 const QUICK_TRIALS = 15
 const DEEP_TRIALS = 42
+const DEEP_BALANCED_TRIALS = 30
 const DIRECTION_LABELS: Array<{
   value: Direction
   arrow: string
@@ -50,7 +52,7 @@ export default function TestPage() {
     [sessionSeed]
   )
   const deepOrder = useMemo(
-    () => createTrialOrder(sessionSeed, DEEP_TRIALS),
+    () => createTrialOrder(sessionSeed, DEEP_BALANCED_TRIALS),
     [sessionSeed]
   )
   const directionOrder = useMemo(
@@ -71,11 +73,23 @@ export default function TestPage() {
   const axis =
     mode === 'quick'
       ? quickTrial.axis
-      : deepOrder[Math.min(trialIndex, DEEP_TRIALS - 1)]
-  const trialSeed = sessionSeed + trialIndex * 7919
+      : trialIndex < DEEP_BALANCED_TRIALS
+        ? deepOrder[trialIndex]
+        : chooseDeepAxis(states, sessionSeed + trialIndex * 3571)
+  const initialTrialSeed = sessionSeed + trialIndex * 7919
   const direction = directionOrder[Math.min(trialIndex, DEEP_TRIALS - 1)]
   const contrast =
     mode === 'quick' ? quickTrial.contrast : states[axis].contrast
+  const trialSeed = useMemo(
+    () =>
+      resolveStimulusSeed(
+        axis,
+        contrast,
+        direction,
+        initialTrialSeed
+      ),
+    [axis, contrast, direction, initialTrialSeed]
+  )
 
   useLoad(() => {
     const preparedMode = consumePreparation()

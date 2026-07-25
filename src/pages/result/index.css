@@ -479,6 +479,21 @@
   margin-top: 10rpx;
 }
 
+.preliminary-result-card {
+  border-color: #c9dfd9;
+  background: #f7fbfa;
+}
+
+.retry-guidance {
+  display: block;
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid var(--line);
+  color: var(--ink);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
 .quick-explain-card {
   margin-top: 32rpx;
 }
@@ -792,6 +807,12 @@
   }
 
   .retry-reason {
+    font-size: 14PX;
+  }
+
+  .retry-guidance {
+    margin-top: 14PX;
+    padding-top: 13PX;
     font-size: 14PX;
   }
 

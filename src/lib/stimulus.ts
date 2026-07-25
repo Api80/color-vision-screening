@@ -9,6 +9,9 @@ const FIELD_RADIUS = 148
 const GRID_SPACING = 7.4
 const ROW_SPACING = GRID_SPACING * 0.866
 const DOT_JITTER = 1.15
+const MIN_FIGURE_DOTS = 160
+const MIN_BACKGROUND_DOTS = 700
+const MAX_GENERATION_ATTEMPTS = 5
 
 const DIRECTION_ANGLES: Record<Direction, number> = {
   right: 0,
@@ -32,25 +35,37 @@ function isFigureDot(x: number, y: number, direction: Direction): boolean {
   return !inGap
 }
 
-export function drawStimulus(
-  canvasId: string,
+interface StimulusModel {
+  groups: Map<string, Array<[number, number, number]>>
+  figureDotCount: number
+  backgroundDotCount: number
+  foreground: string[]
+  background: string[]
+}
+
+export interface StimulusValidation {
+  valid: boolean
+  reasons: string[]
+  figureDotCount: number
+  backgroundDotCount: number
+}
+
+function buildStimulusModel(
   axis: Axis,
   contrast: number,
   direction: Direction,
   seed: number
-) {
-  const context = Taro.createCanvasContext(canvasId)
+): StimulusModel {
   const random = createRandom(seed)
   const palettes = createAxisPalettes(axis, contrast)
   const groups = new Map<string, Array<[number, number, number]>>()
+  let figureDotCount = 0
+  let backgroundDotCount = 0
   const rotation = random() * Math.PI * 2
   const rotationCos = Math.cos(rotation)
   const rotationSin = Math.sin(rotation)
   const startX = -FIELD_RADIUS - GRID_SPACING
   const startY = -FIELD_RADIUS - ROW_SPACING
-
-  context.setFillStyle('#ddd9d0')
-  context.fillRect(0, 0, SIZE, SIZE)
 
   let row = 0
   for (
@@ -81,6 +96,8 @@ export function drawStimulus(
       const x = CENTER + rotatedX
       const y = CENTER + rotatedY
       const figure = isFigureDot(x, y, direction)
+      if (figure) figureDotCount += 1
+      else backgroundDotCount += 1
       const palette = figure ? palettes.foreground : palettes.background
       const color = palette[Math.floor(random() * palette.length)]
       const existing = groups.get(color) || []
@@ -91,7 +108,75 @@ export function drawStimulus(
     row += 1
   }
 
-  groups.forEach((dots, color) => {
+  return {
+    groups,
+    figureDotCount,
+    backgroundDotCount,
+    foreground: palettes.foreground,
+    background: palettes.background
+  }
+}
+
+export function validateStimulus(
+  axis: Axis,
+  contrast: number,
+  direction: Direction,
+  seed: number
+): StimulusValidation {
+  const model = buildStimulusModel(axis, contrast, direction, seed)
+  const reasons: string[] = []
+  if (!Number.isFinite(contrast) || contrast <= 0 || contrast > 0.35) {
+    reasons.push('色差参数超出允许范围')
+  }
+  const paletteHasDifference = model.foreground.some(
+    (color, index) => color !== model.background[index]
+  )
+  if (!paletteHasDifference) {
+    reasons.push('前景色与背景色没有形成有效差异')
+  }
+  if (model.figureDotCount < MIN_FIGURE_DOTS) {
+    reasons.push('组成目标圆环的圆点数量不足')
+  }
+  if (model.backgroundDotCount < MIN_BACKGROUND_DOTS) {
+    reasons.push('背景圆点数量不足')
+  }
+  return {
+    valid: reasons.length === 0,
+    reasons,
+    figureDotCount: model.figureDotCount,
+    backgroundDotCount: model.backgroundDotCount
+  }
+}
+
+export function resolveStimulusSeed(
+  axis: Axis,
+  contrast: number,
+  direction: Direction,
+  initialSeed: number
+): number {
+  for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
+    const candidateSeed = initialSeed + attempt * 104729
+    if (validateStimulus(axis, contrast, direction, candidateSeed).valid) {
+      return candidateSeed
+    }
+  }
+  return initialSeed
+}
+
+export function drawStimulus(
+  canvasId: string,
+  axis: Axis,
+  contrast: number,
+  direction: Direction,
+  seed: number
+) {
+  const context = Taro.createCanvasContext(canvasId)
+  const model = buildStimulusModel(axis, contrast, direction, seed)
+
+  context.setFillStyle('#ddd9d0')
+  context.fillRect(0, 0, SIZE, SIZE)
+
+  model.groups.forEach((dots, color) => {
     context.beginPath()
     dots.forEach(([x, y, radius]) => {
       context.moveTo(x + radius, y)

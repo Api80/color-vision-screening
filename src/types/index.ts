@@ -40,6 +40,17 @@ export interface AxisResult {
   reversals: number
 }
 
+export type ReportDetailLevel = 'full' | 'preliminary'
+export type AnalysisReasonCode =
+  | 'fast-responses'
+  | 'insufficient-convergence'
+  | 'incomplete-records'
+
+export interface AnalysisReason {
+  code: AnalysisReasonCode
+  message: string
+}
+
 export type QuickResultType =
   | 'typical'
   | 'red-green'
@@ -82,6 +93,8 @@ export interface ScreeningReport {
   severityLabel: string
   confidenceLabel: string
   confidenceScore: number
+  detailLevel: ReportDetailLevel
+  analysisReasons: AnalysisReason[]
   qualityWarnings: string[]
   axes: Record<Axis, AxisResult>
   device?: DeviceSnapshot

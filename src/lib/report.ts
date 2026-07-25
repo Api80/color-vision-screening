@@ -10,6 +10,7 @@ import type {
 import {
   AXES,
   estimateThreshold,
+  isAxisEvidenceSufficient,
   MAX_CONTRAST,
   MIN_CONTRAST
 } from './adaptive'
@@ -91,53 +92,42 @@ export function buildReport(
   if (maxScore >= 75) severityLabel = '严重辨色困难'
 
   const records = AXES.flatMap((axis) => states[axis].history)
-  const easyMisses = records.filter(
-    (record) => record.contrast >= 0.2 && !record.correct
-  ).length
-  const tooFast = records.filter((record) => record.responseMs < 250).length
-  const qualityWarnings: string[] = []
-  if (easyMisses >= 3) {
-    qualityWarnings.push('容易辨认的题目出现多次错误，请检查显示设置并认真作答。')
+  const ultraFast = records.filter((record) => record.responseMs < 180).length
+  const fastThreshold = Math.max(8, Math.ceil(records.length * 0.25))
+  const hasFastResponsePattern = ultraFast >= fastThreshold
+  const unresolvedAxes = AXES.filter(
+    (axis) => !isAxisEvidenceSufficient(states[axis])
+  )
+  const analysisReasons: ScreeningReport['analysisReasons'] = []
+  if (hasFastResponsePattern) {
+    analysisReasons.push({
+      code: 'fast-responses',
+      message: '本次部分题目的作答间隔较短。'
+    })
   }
-  if (tooFast >= 3) {
-    qualityWarnings.push('多次作答过快，请凭第一眼判断后再选择。')
+  if (unresolvedAxes.length > 0) {
+    analysisReasons.push({
+      code: 'insufficient-convergence',
+      message: '部分辨色方向尚未形成足够清晰的变化规律。'
+    })
   }
-  if (gap < 8 && maxScore >= 35) {
-    qualityWarnings.push('不同辨色方向的结果过于接近，暂时无法形成清晰方向。')
+  if (records.length < 42) {
+    analysisReasons.push({
+      code: 'incomplete-records',
+      message: '本次没有获得足够数量的完整作答记录。'
+    })
   }
-  const unstableAxes = AXES.filter((axis) => {
-    const result = axes[axis]
-    return result.threshold > MIN_CONTRAST + 0.02 && result.reversals < 2
-  })
-  if (unstableAxes.length > 0) {
-    qualityWarnings.push('部分方向的有效变化次数不足，建议重新测试。')
-  }
-
-  const stabilityPenalty = AXES.reduce((penalty, axis) => {
-    const result = axes[axis]
-    if (result.threshold <= MIN_CONTRAST + 0.02) return penalty
-    return penalty + Math.max(0, 3 - result.reversals) * 5
-  }, 0)
+  const detailLevel: ScreeningReport['detailLevel'] =
+    analysisReasons.length > 0 ? 'preliminary' : 'full'
+  const qualityWarnings = analysisReasons.map((reason) => reason.message)
 
   const confidenceScore = clamp(
-    Math.round(
-      92 -
-        easyMisses * 6 -
-        tooFast * 4 -
-        stabilityPenalty -
-        qualityWarnings.length * 3
-    ),
-    35,
+    Math.round(92 - ultraFast * 2 - unresolvedAxes.length * 10),
+    40,
     95
   )
   const confidenceLabel =
     confidenceScore >= 80 ? '较高' : confidenceScore >= 60 ? '中等' : '偏低'
-
-  if (confidenceScore < 60) {
-    type = 'uncertain'
-    typeLabel = '结果稳定性不足'
-    severityLabel = '本次不作程度判断'
-  }
 
   return {
     mode: 'deep',
@@ -149,6 +139,8 @@ export function buildReport(
     severityLabel,
     confidenceLabel,
     confidenceScore,
+    detailLevel,
+    analysisReasons,
     qualityWarnings,
     axes,
     device,

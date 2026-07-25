@@ -9,6 +9,7 @@ const STEP_SIZES = [0.055, 0.04, 0.028, 0.02, 0.014]
 export const AXES: Axis[] = ['l', 'm', 's']
 export const DIRECTIONS: Direction[] = ['up', 'right', 'down', 'left']
 export const QUICK_CONTRASTS = [0.24, 0.18, 0.13, 0.09, 0.06] as const
+export const MIN_DEEP_TRIALS_PER_AXIS = 10
 
 export interface QuickTrial {
   axis: Axis
@@ -34,6 +35,30 @@ export function createTrialOrder(seed: number, totalTrials: number): Axis[] {
     order.push(...shuffle(AXES, seed + block * 97))
   }
   return order.slice(0, totalTrials)
+}
+
+export function isAxisEvidenceSufficient(state: AxisState): boolean {
+  if (state.history.length < MIN_DEEP_TRIALS_PER_AXIS) return false
+  const reachedHardBoundary = state.contrast <= MIN_CONTRAST + 0.004
+  const reachedEasyBoundary = state.contrast >= MAX_CONTRAST - 0.004
+  return state.reversals >= 2 || reachedHardBoundary || reachedEasyBoundary
+}
+
+export function chooseDeepAxis(
+  states: Record<Axis, AxisState>,
+  seed: number
+): Axis {
+  const unresolved = AXES.filter(
+    (axis) => !isAxisEvidenceSufficient(states[axis])
+  )
+  const candidates = unresolved.length ? unresolved : AXES
+  const minimumTrials = Math.min(
+    ...candidates.map((axis) => states[axis].history.length)
+  )
+  const leastTested = candidates.filter(
+    (axis) => states[axis].history.length === minimumTrials
+  )
+  return shuffle(leastTested, seed)[0]
 }
 
 export function createQuickTrialOrder(seed: number): QuickTrial[] {
