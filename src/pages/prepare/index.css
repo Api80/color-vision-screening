@@ -2,6 +2,10 @@
   margin-top: 0;
 }
 
+.prepare-title {
+  margin-top: 28rpx;
+}
+
 .device-chip {
   display: inline-flex;
   margin-top: 24rpx;
@@ -108,6 +112,10 @@
 }
 
 @media (min-width: 760PX) {
+  .prepare-title {
+    margin-top: 22PX;
+  }
+
   .device-chip {
     margin-top: 18PX;
     padding: 8PX 12PX;

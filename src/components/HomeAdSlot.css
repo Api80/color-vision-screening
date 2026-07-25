@@ -1,0 +1,48 @@
+.home-ad-slot {
+  position: relative;
+  margin-top: 24rpx;
+  overflow: hidden;
+  border-radius: 18rpx;
+}
+
+.home-ad-label {
+  display: block;
+  margin-bottom: 8rpx;
+  color: var(--muted);
+  font-size: 18rpx;
+}
+
+.home-ad-placeholder {
+  min-height: 116rpx;
+  padding: 22rpx;
+  border: 2rpx dashed #cfd9d5;
+  background: rgba(255, 255, 255, 0.58);
+  text-align: center;
+}
+
+.home-ad-copy {
+  display: block;
+  color: #87918e;
+  font-size: 22rpx;
+}
+
+@media (min-width: 760PX) {
+  .home-ad-slot {
+    margin-top: 18PX;
+    border-radius: 12PX;
+  }
+
+  .home-ad-label {
+    margin-bottom: 5PX;
+    font-size: 11PX;
+  }
+
+  .home-ad-placeholder {
+    min-height: 74PX;
+    padding: 16PX;
+  }
+
+  .home-ad-copy {
+    font-size: 13PX;
+  }
+}

@@ -479,6 +479,86 @@
   margin-top: 10rpx;
 }
 
+.quick-explain-card {
+  margin-top: 32rpx;
+}
+
+.quick-direction-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+  margin-top: 24rpx;
+}
+
+.quick-direction-item {
+  padding: 22rpx;
+  border: 2rpx solid var(--line);
+  border-radius: 18rpx;
+  background: #f7faf8;
+}
+
+.quick-direction-name,
+.quick-direction-value,
+.deep-upgrade-kicker,
+.deep-upgrade-title,
+.deep-upgrade-copy,
+.result-time {
+  display: block;
+}
+
+.quick-direction-name {
+  color: var(--muted);
+  font-size: 21rpx;
+}
+
+.quick-direction-value {
+  margin-top: 8rpx;
+  color: var(--ink);
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.deep-upgrade-card {
+  margin-top: 28rpx;
+  padding: 28rpx;
+  border-radius: 26rpx;
+  color: #ffffff;
+  background: linear-gradient(145deg, #0d8b79, #075f54);
+  box-shadow: 0 18rpx 44rpx rgba(7, 95, 84, 0.18);
+}
+
+.deep-upgrade-kicker {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 22rpx;
+}
+
+.deep-upgrade-title {
+  margin-top: 8rpx;
+  font-size: 34rpx;
+  font-weight: 760;
+}
+
+.deep-upgrade-copy {
+  margin-top: 10rpx;
+  color: rgba(255, 255, 255, 0.83);
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.deep-upgrade-button {
+  margin-top: 22rpx;
+  color: var(--brand-dark);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.result-time {
+  margin-top: 26rpx;
+  color: var(--muted);
+  font-size: 21rpx;
+  text-align: center;
+}
+
 @media (max-width: 360px) {
   .summary-grid {
     grid-template-columns: 1fr;
@@ -708,5 +788,53 @@
 
   .retry-reason {
     font-size: 14PX;
+  }
+
+  .quick-direction-grid {
+    gap: 12PX;
+    margin-top: 18PX;
+  }
+
+  .quick-direction-item {
+    padding: 16PX;
+    border-radius: 13PX;
+  }
+
+  .quick-direction-name {
+    font-size: 13PX;
+  }
+
+  .quick-direction-value {
+    margin-top: 5PX;
+    font-size: 15PX;
+  }
+
+  .deep-upgrade-card {
+    margin-top: 24PX;
+    padding: 24PX;
+    border-radius: 20PX;
+  }
+
+  .deep-upgrade-kicker {
+    font-size: 13PX;
+  }
+
+  .deep-upgrade-title {
+    margin-top: 6PX;
+    font-size: 23PX;
+  }
+
+  .deep-upgrade-copy {
+    margin-top: 8PX;
+    font-size: 14PX;
+  }
+
+  .deep-upgrade-button {
+    margin-top: 18PX;
+  }
+
+  .result-time {
+    margin-top: 22PX;
+    font-size: 12PX;
   }
 }

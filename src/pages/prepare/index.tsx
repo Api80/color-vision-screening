@@ -1,25 +1,29 @@
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 import { useState } from 'react'
-import { markPrepared, saveDevice } from '@/lib/storage'
-import type { DeviceSnapshot } from '@/types'
+import {
+  isDeepUnlocked,
+  markPrepared,
+  saveDevice
+} from '@/lib/storage'
+import type { DeviceSnapshot, TestMode } from '@/types'
 import './index.css'
 
 const CHECKS = [
   {
     key: 'filters',
     title: '关闭护眼、夜间和色彩滤镜',
-    detail: '同时关闭原彩显示、True Tone或类似自动色温功能。'
+    detail: '同时关闭原彩显示、True Tone 或类似自动色温功能。'
   },
   {
     key: 'brightness',
-    title: '屏幕亮度调到约70%',
+    title: '屏幕亮度调到约 70%',
     detail: '不要使用自动亮度，避免强光直射屏幕。'
   },
   {
     key: 'lighting',
     title: '使用中性室内光线',
-    detail: '避免昏暗环境和彩色灯光，距离屏幕约40–60厘米。'
+    detail: '避免昏暗环境和彩色灯光，距离屏幕约 40–60 厘米。'
   },
   {
     key: 'vision',
@@ -31,8 +35,18 @@ const CHECKS = [
 export default function PreparePage() {
   const [confirmed, setConfirmed] = useState(false)
   const [device, setDevice] = useState<DeviceSnapshot>()
+  const [mode, setMode] = useState<TestMode>('quick')
 
-  useLoad(() => {
+  useLoad((options) => {
+    const requestedMode: TestMode =
+      options.mode === 'deep' ? 'deep' : 'quick'
+    if (requestedMode === 'deep' && !isDeepUnlocked()) {
+      Taro.showToast({ title: '请先从首页解锁深度自测', icon: 'none' })
+      setTimeout(() => Taro.reLaunch({ url: '/pages/index/index' }), 500)
+      return
+    }
+    setMode(requestedMode)
+
     try {
       const info = Taro.getDeviceInfo()
       const snapshot: DeviceSnapshot = {
@@ -66,21 +80,26 @@ export default function PreparePage() {
 
   const startTest = () => {
     if (!confirmed) return
-    markPrepared()
+    markPrepared(mode)
     Taro.redirectTo({ url: '/pages/test/index' })
   }
 
   return (
     <View className='page prepare-page'>
       <View className='page-narrow'>
-        <Text className='section-title'>测试前温馨提醒</Text>
+        <Text className='eyebrow'>
+          {mode === 'quick' ? '快速自测 · 15 题' : '深度自测 · 42 题'}
+        </Text>
+        <Text className='section-title prepare-title'>测试前温馨提醒</Text>
         <Text className='subtitle prepare-intro'>
-          完成以下准备有助于减少屏幕和环境带来的误差，让测试结果更稳定。
+          做好这些准备有助于减少屏幕和环境带来的误差。下面是提醒事项，不代表设备已自动完成设置。
         </Text>
 
         {showDevice && (
           <View className='device-chip'>
-            <Text>当前设备：{device.brand} {device.model}</Text>
+            <Text>
+              当前设备：{device.brand} {device.model}
+            </Text>
           </View>
         )}
 
@@ -102,7 +121,7 @@ export default function PreparePage() {
         >
           <View className='consent-box'>{confirmed ? '✓' : ''}</View>
           <Text className='consent-text'>
-            我已了解以上提醒，并已做好测试准备
+            我已阅读以上提醒，并准备在当前条件下开始自测
           </Text>
         </View>
 
@@ -111,7 +130,9 @@ export default function PreparePage() {
           disabled={!confirmed}
           onClick={startTest}
         >
-          {confirmed ? '开始色觉自测' : '请先勾选确认'}
+          {confirmed
+            ? `开始${mode === 'quick' ? '快速' : '深度'}自测`
+            : '请先勾选确认'}
         </Button>
       </View>
     </View>

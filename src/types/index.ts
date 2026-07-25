@@ -1,6 +1,7 @@
 export type Axis = 'l' | 'm' | 's'
 export type Direction = 'up' | 'right' | 'down' | 'left'
 export type Answer = Direction | 'none'
+export type TestMode = 'quick' | 'deep'
 
 export interface TrialRecord {
   axis: Axis
@@ -39,7 +40,34 @@ export interface AxisResult {
   reversals: number
 }
 
+export type QuickResultType =
+  | 'typical'
+  | 'red-green'
+  | 'blue-yellow'
+  | 'broad'
+  | 'uncertain'
+
+export interface QuickAxisResult {
+  axis: Axis
+  correctRate: number
+  easyCorrectRate: number
+}
+
+export interface QuickReport {
+  mode: 'quick'
+  id: string
+  createdAt: string
+  version: string
+  result: QuickResultType
+  resultLabel: string
+  qualityWarnings: string[]
+  axes: Record<Axis, QuickAxisResult>
+  device?: DeviceSnapshot
+  records: TrialRecord[]
+}
+
 export interface ScreeningReport {
+  mode: 'deep'
   id: string
   createdAt: string
   version: string
@@ -59,3 +87,5 @@ export interface ScreeningReport {
   device?: DeviceSnapshot
   records: TrialRecord[]
 }
+
+export type ColorVisionReport = QuickReport | ScreeningReport

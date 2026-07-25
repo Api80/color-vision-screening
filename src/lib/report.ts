@@ -3,6 +3,8 @@ import type {
   AxisResult,
   AxisState,
   DeviceSnapshot,
+  QuickAxisResult,
+  QuickReport,
   ScreeningReport
 } from '@/types'
 import {
@@ -13,6 +15,7 @@ import {
 } from './adaptive'
 
 export const REPORT_VERSION = '0.2.1'
+export const QUICK_REPORT_VERSION = '0.1.0'
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
@@ -137,6 +140,7 @@ export function buildReport(
   }
 
   return {
+    mode: 'deep',
     id: `cvd-${Date.now()}`,
     createdAt: new Date().toISOString(),
     version: REPORT_VERSION,
@@ -145,6 +149,81 @@ export function buildReport(
     severityLabel,
     confidenceLabel,
     confidenceScore,
+    qualityWarnings,
+    axes,
+    device,
+    records
+  }
+}
+
+function quickAxisResult(axis: Axis, state: AxisState): QuickAxisResult {
+  const correct = state.history.filter((record) => record.correct).length
+  const easy = state.history.filter((record) => record.contrast >= 0.18)
+  const easyCorrect = easy.filter((record) => record.correct).length
+  return {
+    axis,
+    correctRate: state.history.length
+      ? Math.round((correct / state.history.length) * 100)
+      : 0,
+    easyCorrectRate: easy.length
+      ? Math.round((easyCorrect / easy.length) * 100)
+      : 0
+  }
+}
+
+export function buildQuickReport(
+  states: Record<Axis, AxisState>,
+  device?: DeviceSnapshot
+): QuickReport {
+  const axes = AXES.reduce(
+    (result, axis) => {
+      result[axis] = quickAxisResult(axis, states[axis])
+      return result
+    },
+    {} as Record<Axis, QuickAxisResult>
+  )
+  const records = AXES.flatMap((axis) => states[axis].history)
+  const easyMisses = records.filter(
+    (record) => record.contrast >= 0.18 && !record.correct
+  ).length
+  const tooFast = records.filter((record) => record.responseMs < 250).length
+  const qualityWarnings: string[] = []
+
+  if (easyMisses >= 3) {
+    qualityWarnings.push('较容易辨认的题目出现多次错误。')
+  }
+  if (tooFast >= 3) {
+    qualityWarnings.push('多次作答过快。')
+  }
+
+  const redGreenRate = Math.min(axes.l.correctRate, axes.m.correctRate)
+  const blueYellowRate = axes.s.correctRate
+  const redGreenDifficult = redGreenRate <= 60
+  const blueYellowDifficult = blueYellowRate <= 60
+  let result: QuickReport['result'] = 'typical'
+  let resultLabel = '未发现明显辨色困难'
+
+  if (easyMisses >= 3 || tooFast >= 3) {
+    result = 'uncertain'
+    resultLabel = '本次结果不够清晰'
+  } else if (redGreenDifficult && blueYellowDifficult) {
+    result = 'broad'
+    resultLabel = '多个方向存在辨色困难线索'
+  } else if (redGreenDifficult) {
+    result = 'red-green'
+    resultLabel = '发现红绿色辨别困难线索'
+  } else if (blueYellowDifficult) {
+    result = 'blue-yellow'
+    resultLabel = '发现蓝黄色辨别困难线索'
+  }
+
+  return {
+    mode: 'quick',
+    id: `cvd-quick-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    version: QUICK_REPORT_VERSION,
+    result,
+    resultLabel,
     qualityWarnings,
     axes,
     device,

@@ -1,74 +1,153 @@
 .home-page {
-  padding-top: 64rpx;
+  padding-top: 54rpx;
+  background:
+    radial-gradient(circle at 86% 2%, rgba(47, 166, 147, 0.14), transparent 30%),
+    var(--bg);
 }
 
-.feature-grid {
+.mode-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14rpx;
-  margin-top: 42rpx;
+  gap: 22rpx;
+  margin-top: 40rpx;
 }
 
-.feature-item {
-  min-width: 0;
-  padding: 24rpx 12rpx;
+.mode-card {
+  padding: 28rpx;
   border: 2rpx solid var(--line);
-  border-radius: 22rpx;
-  text-align: center;
+  border-radius: 28rpx;
   background: var(--surface);
+  box-shadow: 0 14rpx 40rpx rgba(28, 49, 44, 0.06);
 }
 
-.feature-value,
-.feature-label {
+.mode-card-primary {
+  border-color: #acd8ce;
+  background: linear-gradient(145deg, #ffffff 0%, #f2faf8 100%);
+  box-shadow: 0 18rpx 44rpx rgba(8, 125, 109, 0.1);
+}
+
+.mode-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.mode-title,
+.mode-time,
+.mode-description,
+.mode-recommend,
+.mode-history {
   display: block;
 }
 
-.feature-value {
-  color: var(--brand-dark);
-  font-size: 31rpx;
-  font-weight: 750;
+.mode-title {
+  font-size: 35rpx;
+  font-weight: 760;
 }
 
-.feature-label {
-  margin-top: 8rpx;
+.mode-recommend,
+.mode-detail-tag {
+  display: inline-flex;
+  margin-bottom: 10rpx;
+  padding: 5rpx 11rpx;
+  border-radius: 999rpx;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.mode-detail-tag {
+  margin: 0 0 0 10rpx;
+  vertical-align: middle;
+}
+
+.mode-time {
+  flex: 0 0 auto;
   color: var(--muted);
   font-size: 22rpx;
+  font-weight: 600;
 }
 
-.privacy-line {
-  margin-top: 32rpx;
+.mode-description {
+  margin-top: 16rpx;
   color: var(--muted);
-  text-align: center;
+  font-size: 25rpx;
+  line-height: 1.62;
+}
+
+.mode-action {
+  margin-top: 24rpx;
+}
+
+.deep-action {
+  color: var(--brand-dark);
+  border-color: #b8d9d1;
+}
+
+.mode-history {
+  margin-top: 19rpx;
+  color: var(--brand-dark);
   font-size: 23rpx;
-  line-height: 1.5;
+  font-weight: 650;
+  text-align: center;
 }
 
 @media (min-width: 760PX) {
   .home-page {
-    padding-top: 56PX;
+    padding-top: 50PX;
   }
 
-  .feature-grid {
-    gap: 14PX;
+  .mode-list {
+    grid-template-columns: repeat(2, 1fr);
+    align-items: stretch;
+    gap: 18PX;
     margin-top: 34PX;
   }
 
-  .feature-item {
-    padding: 20PX 12PX;
-    border-radius: 16PX;
+  .mode-card {
+    display: flex;
+    padding: 24PX;
+    border-radius: 20PX;
+    flex-direction: column;
   }
 
-  .feature-value {
-    font-size: 22PX;
+  .mode-card-head {
+    display: block;
   }
 
-  .feature-label {
-    margin-top: 6PX;
+  .mode-title {
+    font-size: 24PX;
+  }
+
+  .mode-recommend,
+  .mode-detail-tag {
+    margin-bottom: 7PX;
+    padding: 3PX 7PX;
+    font-size: 12PX;
+  }
+
+  .mode-detail-tag {
+    margin-left: 7PX;
+  }
+
+  .mode-time {
+    margin-top: 8PX;
     font-size: 13PX;
   }
 
-  .privacy-line {
-    margin-top: 26PX;
+  .mode-description {
+    flex: 1;
+    margin-top: 13PX;
+    font-size: 15PX;
+  }
+
+  .mode-action {
+    margin-top: 20PX;
+  }
+
+  .mode-history {
+    margin-top: 14PX;
     font-size: 13PX;
   }
 }

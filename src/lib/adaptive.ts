@@ -8,6 +8,12 @@ const STEP_SIZES = [0.055, 0.04, 0.028, 0.02, 0.014]
 
 export const AXES: Axis[] = ['l', 'm', 's']
 export const DIRECTIONS: Direction[] = ['up', 'right', 'down', 'left']
+export const QUICK_CONTRASTS = [0.24, 0.18, 0.13, 0.09, 0.06] as const
+
+export interface QuickTrial {
+  axis: Axis
+  contrast: number
+}
 
 export function createAxisState(axis: Axis): AxisState {
   return {
@@ -28,6 +34,13 @@ export function createTrialOrder(seed: number, totalTrials: number): Axis[] {
     order.push(...shuffle(AXES, seed + block * 97))
   }
   return order.slice(0, totalTrials)
+}
+
+export function createQuickTrialOrder(seed: number): QuickTrial[] {
+  const trials = AXES.flatMap((axis) =>
+    QUICK_CONTRASTS.map((contrast) => ({ axis, contrast }))
+  )
+  return shuffle(trials, seed)
 }
 
 export function createDirectionOrder(
@@ -104,6 +117,26 @@ export function updateAxisState(
     lastMove: move === 0 ? state.lastMove : move,
     history: [...state.history, record]
   }
+}
+
+export function recordFixedTrial(
+  state: AxisState,
+  answer: Answer,
+  direction: Direction,
+  responseMs: number,
+  seed: number,
+  contrast: number
+): AxisState {
+  const record: TrialRecord = {
+    axis: state.axis,
+    contrast,
+    direction,
+    answer,
+    correct: answer === direction,
+    responseMs,
+    seed
+  }
+  return { ...state, history: [...state.history, record] }
 }
 
 function median(values: number[]): number {

@@ -1,9 +1,16 @@
 import { Button, Text, View } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { useState } from 'react'
-import { REPORT_VERSION } from '@/lib/report'
-import { loadReport } from '@/lib/storage'
-import type { Axis, ScreeningReport } from '@/types'
+import { requestDeepUnlock } from '@/lib/ads'
+import { QUICK_REPORT_VERSION, REPORT_VERSION } from '@/lib/report'
+import { isDeepUnlocked, loadReport } from '@/lib/storage'
+import type {
+  Axis,
+  ColorVisionReport,
+  QuickReport,
+  ScreeningReport,
+  TestMode
+} from '@/types'
 import './index.css'
 
 const AXIS_META: Record<
@@ -41,7 +48,7 @@ const TYPE_META: Record<
     headline: '红绿色辨别存在困难',
     subtype: '更偏向偏红色觉型（protan）',
     explanation:
-      '长波相关方向的辨色困难更突出，部分红、绿、棕色可能更容易混淆，红色也可能显得偏暗。'
+      '长波相关方向的辨色困难更突出，部分红、绿、棕色可能更容易混淆。'
   },
   deutan: {
     headline: '红绿色辨别存在困难',
@@ -59,46 +66,51 @@ const TYPE_META: Record<
     headline: '多个方向辨色存在困难',
     subtype: '暂时没有形成单一类型方向',
     explanation:
-      '两条或更多辨色方向同时偏高，可能与显示条件、注意状态或多方向色觉问题有关，建议复测。'
+      '两个或更多辨色方向同时偏高，可能与显示条件、注意状态或多方向辨色问题有关。'
   },
   uncertain: {
-    headline: '结果方向暂不明确',
+    headline: '本次结果不够清晰',
     subtype: '暂时无法稳定分型',
-    explanation:
-      '当前作答没有形成稳定方向，建议调整屏幕和环境后重新测试。'
+    explanation: '当前作答没有形成稳定方向，建议调整屏幕和环境后重新测试。'
   }
 }
 
-const TERM_CARDS = [
-  {
-    term: 'protan',
-    name: '偏红型',
-    description: 'L 视锥相关，属于红绿色觉方向；红色有时会显得更暗。'
+const QUICK_META: Record<
+  QuickReport['result'],
+  { headline: string; lead: string; tone: string }
+> = {
+  typical: {
+    headline: '未发现明显辨色困难',
+    lead: '本次快速题目中，红绿和蓝黄两个方向均未出现明显困难线索。',
+    tone: 'typical'
   },
-  {
-    term: 'deutan',
-    name: '偏绿型',
-    description: 'M 视锥相关，属于红绿色觉方向，也是常见分型。'
+  'red-green': {
+    headline: '发现红绿色辨别困难线索',
+    lead: '红绿相关题目的辨认表现相对较弱，可以通过深度自测进一步观察。',
+    tone: 'moderate'
   },
-  {
-    term: 'tritan',
-    name: '蓝黄型',
-    description: 'S 视锥相关，主要影响蓝黄辨色，相对少见。'
+  'blue-yellow': {
+    headline: '发现蓝黄色辨别困难线索',
+    lead: '蓝黄相关题目的辨认表现相对较弱，可以通过深度自测进一步观察。',
+    tone: 'moderate'
+  },
+  broad: {
+    headline: '多个方向存在辨色困难线索',
+    lead: '红绿和蓝黄相关题目均出现辨认困难，也可能受到屏幕或作答状态影响。',
+    tone: 'marked'
+  },
+  uncertain: {
+    headline: '本次结果不够清晰',
+    lead: '较容易的题目出现多次错误或作答过快，建议调整状态后重新测试。',
+    tone: 'mild'
   }
-] as const
+}
 
 function scoreGrade(score: number) {
   if (score < 25) return { label: '接近正常范围', tone: 'typical' }
   if (score < 50) return { label: '轻微辨色困难', tone: 'mild' }
   if (score < 75) return { label: '明显辨色困难', tone: 'moderate' }
   return { label: '严重辨色困难', tone: 'marked' }
-}
-
-function screeningConclusion(score: number) {
-  if (score < 25) return '本次表现接近正常范围'
-  if (score < 50) return '本次表现为轻微辨色困难'
-  if (score < 75) return '本次表现为明显辨色困难'
-  return '本次表现为严重辨色困难，建议进一步检查'
 }
 
 function formatDate(value: string) {
@@ -111,120 +123,162 @@ function formatDate(value: string) {
   ).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-function buildRetryReasons(report: ScreeningReport) {
-  const reasons: string[] = []
-  const easyMisses = report.records.filter(
-    (record) => record.contrast >= 0.2 && !record.correct
-  ).length
-  const tooFast = report.records.filter(
-    (record) => record.responseMs < 250
-  ).length
-  const axisResults = (['l', 'm', 's'] as Axis[])
-    .map((axis) => report.axes[axis])
-    .sort((left, right) => right.score - left.score)
-
-  if (easyMisses >= 3) {
-    reasons.push('容易辨认的题目出现多次错误，请检查显示设置并认真作答。')
-  }
-  if (tooFast >= 3) {
-    reasons.push('多次作答过快，请凭第一眼判断后再选择。')
-  }
-  if (
-    axisResults[0].score >= 35 &&
-    axisResults[0].score - axisResults[1].score < 8
-  ) {
-    reasons.push('不同辨色方向的结果过于接近，暂时无法形成清晰方向。')
-  }
-  if (axisResults.some((item) => item.score > 0 && item.reversals < 2)) {
-    reasons.push('部分方向的有效变化次数不足，建议重新测试。')
-  }
-
-  return reasons.length > 0
-    ? reasons
-    : ['本次前后作答没有形成清晰规律，建议调整状态后重新测试。']
+function EmptyResult({ mode }: { mode: TestMode }) {
+  return (
+    <View className='page empty-result'>
+      <Text className='section-title'>还没有这项自测结果</Text>
+      <Button
+        className='primary-button'
+        onClick={() =>
+          mode === 'deep'
+            ? Taro.reLaunch({ url: '/pages/index/index' })
+            : Taro.redirectTo({ url: '/pages/prepare/index?mode=quick' })
+        }
+      >
+        {mode === 'quick' ? '开始快速自测' : '返回首页解锁深度自测'}
+      </Button>
+    </View>
+  )
 }
 
-export default function ResultPage() {
-  const [report, setReport] = useState<ScreeningReport>()
+function QuickResultView({ report }: { report: QuickReport }) {
+  const meta = QUICK_META[report.result]
+  const [unlocking, setUnlocking] = useState(false)
 
-  useDidShow(() => {
-    setReport(loadReport())
-  })
-
-  if (!report) {
-    return (
-      <View className='page empty-result'>
-        <Text className='section-title'>还没有自测结果</Text>
-        <Button
-          className='primary-button'
-          onClick={() => Taro.redirectTo({ url: '/pages/prepare/index' })}
-        >
-          开始测试
-        </Button>
-      </View>
-    )
+  const startDeep = async () => {
+    if (isDeepUnlocked()) {
+      Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
+      return
+    }
+    const modal = await Taro.showModal({
+      title: '继续深度自测',
+      content:
+        '完整观看一段激励视频，可开始 42 题深度自测。若广告不可用，将直接开放。',
+      confirmText: '看广告'
+    })
+    if (!modal.confirm) return
+    setUnlocking(true)
+    const result = await requestDeepUnlock()
+    setUnlocking(false)
+    if (!result.unlocked) {
+      Taro.showToast({ title: '完整观看后可解锁', icon: 'none' })
+      return
+    }
+    Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
   }
 
-  if (report.version !== REPORT_VERSION) {
-    return (
-      <View className='page empty-result'>
-        <View className='card legacy-result-card'>
-          <Text className='eyebrow'>测试算法已更新</Text>
-          <Text className='section-title legacy-result-title'>
-            旧结果已作废
+  return (
+    <View className='page result-page quick-result-page'>
+      <View className='page-narrow'>
+        <Text className='eyebrow'>快速自测结果 · 15 题</Text>
+        <Text className='result-type'>{meta.headline}</Text>
+        <View className='result-badges'>
+          <Text className={`result-grade-badge grade-${meta.tone}`}>
+            快速方向提示
           </Text>
-          <Text className='result-copy'>
-            旧版存在程度偏高和方向顺序可预测的问题，不能继续用于判断。请使用新版重新测试。
-          </Text>
-          <Button
-            className='primary-button legacy-result-button'
-            onClick={() => Taro.redirectTo({ url: '/pages/prepare/index' })}
-          >
-            使用新版重新测试
-          </Button>
         </View>
-      </View>
-    )
-  }
+        <Text className='result-lead'>{meta.lead}</Text>
 
-  if (report.confidenceScore < 60) {
-    const retryReasons = buildRetryReasons(report)
-
-    return (
-      <View className='page result-page retry-result-page'>
-        <View className='page-narrow'>
-          <Text className='eyebrow'>辨色谱 · 建议重新测试</Text>
-          <Text className='result-type'>本次暂时无法得出清晰结果</Text>
-          <Text className='result-lead'>
-            作答过程可能受到速度、注意力或显示环境影响。本次不展示类型和辨色困难程度。
+        <View className='card quick-explain-card'>
+          <Text className='section-title'>这份结果说明什么？</Text>
+          <Text className='result-copy'>
+            快速自测用于初步发现辨色困难方向。因为题量较少，本页不区分
+            protan、deutan，也不判断色弱、色盲或具体程度。
           </Text>
-
-          <View className='card retry-reasons-card'>
-            <Text className='section-title'>重测前请注意</Text>
-            <View className='retry-reason-list'>
-              {retryReasons.map((reason) => (
-                <Text className='retry-reason' key={reason}>
-                  • {reason}
-                </Text>
-              ))}
+          <View className='quick-direction-grid'>
+            <View className='quick-direction-item'>
+              <Text className='quick-direction-name'>红绿方向</Text>
+              <Text className='quick-direction-value'>
+                {report.result === 'red-green' || report.result === 'broad'
+                  ? '发现困难线索'
+                  : report.result === 'uncertain'
+                    ? '暂不明确'
+                    : '未见明显线索'}
+              </Text>
             </View>
-          </View>
-
-          <View className='summary-grid summary-grid-single'>
-            <View className='summary-item'>
-              <Text className='summary-label'>测试时间</Text>
-              <Text className='summary-value summary-date'>
-                {formatDate(report.createdAt)}
+            <View className='quick-direction-item'>
+              <Text className='quick-direction-name'>蓝黄方向</Text>
+              <Text className='quick-direction-value'>
+                {report.result === 'blue-yellow' || report.result === 'broad'
+                  ? '发现困难线索'
+                  : report.result === 'uncertain'
+                    ? '暂不明确'
+                    : '未见明显线索'}
               </Text>
             </View>
           </View>
+        </View>
 
+        <View className='deep-upgrade-card'>
+          <Text className='deep-upgrade-kicker'>想了解得更详细？</Text>
+          <Text className='deep-upgrade-title'>42 题深度自测</Text>
+          <Text className='deep-upgrade-copy'>
+            进一步观察类型倾向、辨色困难程度和三个辨色方向。
+          </Text>
+          <Button
+            className='primary-button deep-upgrade-button'
+            loading={unlocking}
+            disabled={unlocking}
+            onClick={startDeep}
+          >
+            {isDeepUnlocked() ? '开始深度自测' : '看一段广告，解锁深度自测'}
+          </Button>
+        </View>
+
+        <Text className='result-time'>测试时间：{formatDate(report.createdAt)}</Text>
+        <View className='notice'>
+          本次结果反映你在当前屏幕条件下的辨色表现，不能用于体检或资格判定。
+        </View>
+        <View className='button-stack'>
+          <Button
+            className='secondary-button'
+            onClick={() =>
+              Taro.redirectTo({ url: '/pages/prepare/index?mode=quick' })
+            }
+          >
+            重新快速自测
+          </Button>
+          <Button
+            className='secondary-button'
+            onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}
+          >
+            返回首页
+          </Button>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function DeepResultView({ report }: { report: ScreeningReport }) {
+  if (report.confidenceScore < 60) {
+    return (
+      <View className='page result-page retry-result-page'>
+        <View className='page-narrow'>
+          <Text className='eyebrow'>深度自测 · 建议重新测试</Text>
+          <Text className='result-type'>本次暂时无法得出清晰结果</Text>
+          <Text className='result-lead'>
+            作答过程可能受到速度、注意力或显示环境影响，本次不展示类型和辨色困难程度。
+          </Text>
+          <View className='card retry-reasons-card'>
+            <Text className='section-title'>重测前请注意</Text>
+            {(report.qualityWarnings.length
+              ? report.qualityWarnings
+              : ['调整屏幕和环境后，凭第一眼认真作答。']
+            ).map((warning) => (
+              <Text className='retry-reason' key={warning}>
+                · {warning}
+              </Text>
+            ))}
+          </View>
           <View className='button-stack'>
             <Button
               className='primary-button'
-              onClick={() => Taro.redirectTo({ url: '/pages/prepare/index' })}
+              onClick={() =>
+                Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
+              }
             >
-              重新测试
+              重新深度自测
             </Button>
             <Button
               className='secondary-button'
@@ -244,43 +298,27 @@ export default function ResultPage() {
   const maxScore = Math.max(...axisEntries.map((item) => item.score))
   const overallGrade = scoreGrade(maxScore)
   const typeMeta = TYPE_META[report.type]
-  const severityLabel = overallGrade.label
   const markerPosition = Math.min(98, Math.max(2, maxScore))
 
   return (
     <View className='page result-page'>
       <View className='page-narrow'>
-        <Text className='eyebrow'>辨色谱 · 色觉自测结果</Text>
+        <Text className='eyebrow'>深度自测报告 · 42 题</Text>
         <Text className='result-type'>{typeMeta.headline}</Text>
         <View className='result-badges'>
           <Text className='result-type-badge'>{typeMeta.subtype}</Text>
-          <Text className={`result-grade-badge grade-${overallGrade.tone}`}>
-            {severityLabel}
+          <Text
+            className={`result-grade-badge grade-${overallGrade.tone}`}
+          >
+            {overallGrade.label}
           </Text>
         </View>
         <Text className='result-lead'>{typeMeta.explanation}</Text>
 
         <View className='diagnosis-limit'>
-          <View className='diagnosis-heading'>
-            <View className='diagnosis-icon'>!</View>
-            <View className='diagnosis-copy'>
-              <Text className='diagnosis-title'>本次辨色困难程度</Text>
-              <Text className='diagnosis-result'>
-                {screeningConclusion(maxScore)}
-              </Text>
-            </View>
-          </View>
-
+          <Text className='diagnosis-title'>本次辨色困难程度</Text>
+          <Text className='diagnosis-result'>{overallGrade.label}</Text>
           <View className='degree-scale'>
-            <View className='degree-groups'>
-              <Text className='degree-group degree-group-normal'>
-                正常范围
-              </Text>
-              <Text className='degree-group degree-group-weak'>辨色困难</Text>
-              <Text className='degree-group degree-group-blind'>
-                建议检查
-              </Text>
-            </View>
             <View className='degree-track'>
               <View className='degree-segment segment-normal' />
               <View className='degree-segment segment-mild' />
@@ -300,26 +338,16 @@ export default function ResultPage() {
               <Text className='degree-label'>严重困难</Text>
             </View>
           </View>
-
           <Text className='diagnosis-question'>结果说明</Text>
           <Text className='diagnosis-text'>
-            本次结果反映你在当前屏幕条件下的辨色表现。如需进一步确认本次结果，或用于体检和资格判定，请以标准色觉检查结果为准。
+            本次结果反映你在当前屏幕条件下的辨色表现。如需用于体检或资格判定，请以标准色觉检查结果为准。
           </Text>
-        </View>
-
-        <View className='summary-grid summary-grid-single'>
-          <View className='summary-item'>
-            <Text className='summary-label'>测试时间</Text>
-            <Text className='summary-value summary-date'>
-              {formatDate(report.createdAt)}
-            </Text>
-          </View>
         </View>
 
         <View className='card'>
           <Text className='section-title'>三个辨色方向</Text>
           <Text className='small muted'>
-            指数越高，表示本次需要更大的色差才能辨认。它用于比较三个方向的表现，不代表医学分级。
+            指数越高，表示本次需要更大的色差才能辨认。它用于比较三个方向，不代表医学分级。
           </Text>
           <View className='axis-list'>
             {axisEntries.map((item) => {
@@ -362,45 +390,26 @@ export default function ResultPage() {
           </View>
         </View>
 
-        <View className='card glossary-card'>
-          <Text className='section-title'>这些英文分别是什么意思？</Text>
-          <Text className='small muted'>
-            它们是不同的色觉表现方向，不等同于“完全看不见某种颜色”。
-          </Text>
-          <View className='term-grid'>
-            {TERM_CARDS.map((item) => (
-              <View className='term-item' key={item.term}>
-                <View className='term-head'>
-                  <Text className='term-code'>{item.term}</Text>
-                  <Text className='term-name'>{item.name}</Text>
-                </View>
-                <Text className='term-description'>{item.description}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
         <View className='card'>
-          <Text className='section-title'>下一步怎么做</Text>
+          <Text className='section-title'>名词说明</Text>
           <Text className='result-copy'>
-            若重复测试仍出现同一方向的明显或严重辨色困难，可以到眼科或正规视光机构使用标准色觉图、HRR、D-15或异常镜进一步确认。
-          </Text>
-          <View className='divider' />
-          <Text className='result-copy'>
-            若颜色辨别近期突然变化、左右眼明显不同，或伴随视力下降、眼痛、复视，应尽快就医。
+            protan 是偏红方向，deutan 是偏绿方向，两者都属于红绿色觉方向；tritan
+            是蓝黄色觉方向。这些词表示倾向，不等于完全看不见某种颜色。
           </Text>
         </View>
 
+        <Text className='result-time'>测试时间：{formatDate(report.createdAt)}</Text>
         <View className='notice'>
-          不能将本报告用于驾照、招录、入学、征兵或其他职业资格判定。
+          本报告不能用于驾照、招录、入学、征兵或其他职业资格判定。
         </View>
-
         <View className='button-stack'>
           <Button
             className='primary-button'
-            onClick={() => Taro.redirectTo({ url: '/pages/prepare/index' })}
+            onClick={() =>
+              Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
+            }
           >
-            重新测试
+            重新深度自测
           </Button>
           <Button
             className='secondary-button'
@@ -411,5 +420,49 @@ export default function ResultPage() {
         </View>
       </View>
     </View>
+  )
+}
+
+export default function ResultPage() {
+  const router = useRouter()
+  const requestedMode: TestMode =
+    router.params.mode === 'deep' ? 'deep' : 'quick'
+  const [report, setReport] = useState<ColorVisionReport>()
+
+  useDidShow(() => {
+    setReport(loadReport(requestedMode))
+  })
+
+  if (!report) return <EmptyResult mode={requestedMode} />
+
+  const expectedVersion =
+    report.mode === 'quick' ? QUICK_REPORT_VERSION : REPORT_VERSION
+  if (report.version !== expectedVersion) {
+    return (
+      <View className='page empty-result'>
+        <View className='card legacy-result-card'>
+          <Text className='eyebrow'>测试算法已更新</Text>
+          <Text className='section-title legacy-result-title'>
+            旧结果需要重新测试
+          </Text>
+          <Button
+            className='primary-button legacy-result-button'
+            onClick={() =>
+              Taro.redirectTo({
+                url: `/pages/prepare/index?mode=${requestedMode}`
+              })
+            }
+          >
+            使用新版重新测试
+          </Button>
+        </View>
+      </View>
+    )
+  }
+
+  return report.mode === 'quick' ? (
+    <QuickResultView report={report} />
+  ) : (
+    <DeepResultView report={report} />
   )
 }
