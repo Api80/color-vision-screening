@@ -1,0 +1,12 @@
+{
+  "miniprogramRoot": "dist/tt/",
+  "projectname": "辨色谱",
+  "description": "跨端色觉辨别自测工具",
+  "appid": "testAppId",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "minified": true
+  },
+  "compileType": "miniprogram"
+}

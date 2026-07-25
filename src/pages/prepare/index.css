@@ -1,0 +1,165 @@
+.prepare-intro {
+  margin-top: 0;
+}
+
+.device-chip {
+  display: inline-flex;
+  margin-top: 24rpx;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  color: var(--muted);
+  background: #e9ecea;
+  font-size: 23rpx;
+}
+
+.check-list {
+  margin-top: 30rpx;
+  border-top: 2rpx solid var(--line);
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 26rpx 0;
+  border-bottom: 2rpx solid var(--line);
+}
+
+.check-index {
+  display: flex;
+  flex: 0 0 50rpx;
+  align-items: center;
+  justify-content: center;
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 50%;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.check-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.check-title,
+.check-detail {
+  display: block;
+}
+
+.check-title {
+  font-size: 29rpx;
+  font-weight: 650;
+}
+
+.check-detail {
+  margin-top: 8rpx;
+  color: var(--muted);
+  font-size: 23rpx;
+  line-height: 1.5;
+}
+
+.consent-row {
+  display: flex;
+  margin-top: 30rpx;
+  padding: 22rpx;
+  align-items: flex-start;
+  gap: 16rpx;
+  border: 2rpx solid var(--line);
+  border-radius: 20rpx;
+  background: var(--surface);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.consent-row.is-confirmed {
+  border-color: #9dcec3;
+  background: var(--brand-soft);
+}
+
+.consent-box {
+  display: flex;
+  flex: 0 0 38rpx;
+  width: 38rpx;
+  height: 38rpx;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid #aab6b2;
+  border-radius: 10rpx;
+  color: #ffffff;
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+.is-confirmed .consent-box {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.consent-text {
+  color: var(--ink);
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.prepare-action {
+  margin-top: 36rpx;
+}
+
+@media (min-width: 760PX) {
+  .device-chip {
+    margin-top: 18PX;
+    padding: 8PX 12PX;
+    font-size: 13PX;
+  }
+
+  .check-list {
+    margin-top: 24PX;
+  }
+
+  .check-row {
+    gap: 16PX;
+    padding: 20PX 0;
+  }
+
+  .check-index {
+    flex-basis: 34PX;
+    width: 34PX;
+    height: 34PX;
+    font-size: 14PX;
+  }
+
+  .check-title {
+    font-size: 17PX;
+  }
+
+  .check-detail {
+    margin-top: 6PX;
+    font-size: 14PX;
+  }
+
+  .consent-row {
+    margin-top: 24PX;
+    padding: 16PX;
+    gap: 12PX;
+    border-radius: 14PX;
+  }
+
+  .consent-box {
+    flex-basis: 24PX;
+    width: 24PX;
+    height: 24PX;
+    border-width: 2PX;
+    border-radius: 6PX;
+    font-size: 14PX;
+  }
+
+  .consent-text {
+    font-size: 14PX;
+  }
+
+  .prepare-action {
+    margin-top: 30PX;
+  }
+}
