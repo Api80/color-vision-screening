@@ -183,7 +183,7 @@ function QuickResultView({ report }: { report: QuickReport }) {
         <View className='card quick-explain-card'>
           <Text className='section-title'>这份结果说明什么？</Text>
           <Text className='result-copy'>
-            快速自测只用于初步了解辨色方向。由于题量较少，本结果不区分具体色觉类型，也不能判断是色弱还是色盲及其程度。
+            快速自测用于初步了解辨色表现。由于题量较少，本结果不区分具体色觉类型，仅提示可能存在的辨色困难方向。
           </Text>
           <View className='quick-direction-grid'>
             <View className='quick-direction-item'>
