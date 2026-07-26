@@ -121,11 +121,11 @@ export default function HomePage() {
           </View>
         </View>
 
-        <HomeAdSlot />
-
         <View className='notice'>
-          屏幕亮度和环境光会影响结果。本测试仅用于个人自测与了解，不能用于驾照、招录、入学或职业资格评定。
+          屏幕亮度和环境光会影响结果。本测试仅用于个人自测与了解，不能作为驾照申领、招录、入学等体检或资格判定依据。
         </View>
+
+        <HomeAdSlot />
       </View>
     </View>
   )
