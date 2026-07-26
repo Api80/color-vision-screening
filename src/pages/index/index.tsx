@@ -1,6 +1,7 @@
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
+import BrandMark from '@/components/BrandMark'
 import HomeAdSlot from '@/components/HomeAdSlot'
 import { requestDeepUnlock } from '@/lib/ads'
 import { isDeepUnlocked, loadReport } from '@/lib/storage'
@@ -52,7 +53,13 @@ export default function HomePage() {
   return (
     <View className='page home-page'>
       <View className='page-narrow'>
-        <Text className='eyebrow'>辨色谱 · 色觉自测</Text>
+        <View className='home-brand'>
+          <BrandMark />
+          <View className='home-brand-copy'>
+            <Text className='home-brand-name'>辨色谱</Text>
+            <Text className='home-brand-subtitle'>色觉自测</Text>
+          </View>
+        </View>
         <Text className='title'>选择自测方式</Text>
         <Text className='subtitle'>
           通过动态小圆点图案，了解红绿色和蓝黄色辨别表现。两种模式均无需登录，结果仅保存在当前设备。

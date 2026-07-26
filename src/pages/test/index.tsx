@@ -1,6 +1,7 @@
 import { Button, Canvas, Text, View } from '@tarojs/components'
 import Taro, { useLoad, useReady } from '@tarojs/taro'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import BrandMark from '@/components/BrandMark'
 import {
   createAxisState,
   chooseDeepAxis,
@@ -191,7 +192,7 @@ export default function TestPage() {
       <View className='test-panel'>
         <View className='test-brand'>
           <View className='test-brand-main'>
-            <View className='brand-mark'>辨</View>
+            <BrandMark size='small' />
             <Text className='brand-name'>辨色谱</Text>
           </View>
           <Text className='focus-chip'>

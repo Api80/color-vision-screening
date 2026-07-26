@@ -5,6 +5,34 @@
     var(--bg);
 }
 
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.home-brand-copy,
+.home-brand-name,
+.home-brand-subtitle {
+  display: block;
+}
+
+.home-brand-name {
+  color: var(--ink);
+  font-size: 31rpx;
+  font-weight: 780;
+  letter-spacing: 1rpx;
+  line-height: 1.08;
+}
+
+.home-brand-subtitle {
+  margin-top: 6rpx;
+  color: var(--brand-dark);
+  font-size: 20rpx;
+  font-weight: 650;
+  letter-spacing: 3rpx;
+}
+
 .mode-list {
   display: grid;
   gap: 22rpx;
@@ -93,6 +121,20 @@
 @media (min-width: 760PX) {
   .home-page {
     padding-top: 50PX;
+  }
+
+  .home-brand {
+    gap: 11PX;
+  }
+
+  .home-brand-name {
+    font-size: 19PX;
+  }
+
+  .home-brand-subtitle {
+    margin-top: 3PX;
+    font-size: 12PX;
+    letter-spacing: 2PX;
   }
 
   .mode-list {

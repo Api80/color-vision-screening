@@ -40,20 +40,6 @@
   gap: 12rpx;
 }
 
-.brand-mark {
-  display: flex;
-  width: 48rpx;
-  height: 48rpx;
-  align-items: center;
-  justify-content: center;
-  border-radius: 15rpx;
-  color: #ffffff;
-  background: linear-gradient(145deg, #11a08b, var(--brand-dark));
-  font-size: 24rpx;
-  font-weight: 750;
-  box-shadow: 0 8rpx 18rpx rgba(8, 125, 109, 0.2);
-}
-
 .brand-name {
   font-size: 27rpx;
   font-weight: 750;
@@ -380,13 +366,6 @@
     max-width: 480PX;
     padding: 22PX 24PX 24PX;
     border-radius: 28PX;
-  }
-
-  .brand-mark {
-    width: 28PX;
-    height: 28PX;
-    border-radius: 9PX;
-    font-size: 14PX;
   }
 
   .brand-name {
