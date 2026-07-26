@@ -405,9 +405,9 @@ function DeepResultView({
               <Text className='degree-label'>严重困难</Text>
             </View>
           </View>
-          <Text className='diagnosis-question'>结果说明</Text>
+          <Text className='diagnosis-question'>温馨提示</Text>
           <Text className='diagnosis-text'>
-            本次结果反映你在当前屏幕条件下的辨色表现，可提供类型倾向和辨色困难程度，但不能可靠判断是色弱还是色盲及其医学程度。如需用于体检或资格判定，请以标准色觉检查结果为准。
+            本次结果仅反映当前屏幕和环境条件下的辨色表现，可用于个人了解辨色困难方向、类型倾向和程度线索。如需确认医学程度，或用于体检及资格判定，请前往医院眼科或具备相应资质的医疗机构进行标准色觉检查。
           </Text>
         </View>
 
@@ -466,9 +466,6 @@ function DeepResultView({
         </View>
 
         <Text className='result-time'>测试时间：{formatDate(report.createdAt)}</Text>
-        <View className='notice'>
-          本报告不能用于驾照、招录、入学、征兵或其他职业资格判定。
-        </View>
         <View className='button-stack'>
           {!repeatedUnclear && (
             <Button className='primary-button' onClick={restartDeepTest}>
