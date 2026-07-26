@@ -10,10 +10,10 @@
   border: 2rpx solid rgba(255, 255, 255, 0.42);
   border-radius: 21rpx;
   background:
-    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.2), transparent 24%),
-    linear-gradient(145deg, #0b9481, #075f54);
+    radial-gradient(circle at 76% 16%, rgba(255, 255, 255, 0.28), transparent 28%),
+    linear-gradient(145deg, #22b89b, #0a8d7b);
   box-shadow:
-    0 10rpx 24rpx rgba(7, 95, 84, 0.22),
+    0 10rpx 24rpx rgba(10, 141, 123, 0.2),
     inset 0 1rpx 0 rgba(255, 255, 255, 0.22);
 }
 
@@ -52,7 +52,7 @@
   width: 48rpx;
   height: 48rpx;
   border-radius: 15rpx;
-  box-shadow: 0 8rpx 18rpx rgba(7, 95, 84, 0.2);
+  box-shadow: 0 8rpx 18rpx rgba(10, 141, 123, 0.18);
 }
 
 .brand-symbol--small .brand-symbol-ring {

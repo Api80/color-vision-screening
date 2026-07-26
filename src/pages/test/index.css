@@ -1,6 +1,8 @@
 .test-page {
   min-height: 100vh;
   padding: 24rpx 24rpx 40rpx;
+  padding-bottom: calc(40rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
   background:
     radial-gradient(circle at 12% 0%, rgba(47, 166, 147, 0.13), transparent 34%),
     linear-gradient(180deg, #f4f8f6 0%, var(--bg) 46%, #f5f3ee 100%);
@@ -16,7 +18,7 @@
 
 .test-panel {
   width: 100%;
-  max-width: 920rpx;
+  max-width: 100%;
   margin: 0 auto;
   padding: 28rpx;
   border: 2rpx solid rgba(217, 226, 222, 0.86);
@@ -127,8 +129,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 640rpx;
-  height: 640rpx;
+  width: 100%;
+  max-width: 320PX;
+  height: auto;
+  aspect-ratio: 1;
   margin: 24rpx auto 28rpx;
   overflow: hidden;
   border: 8rpx solid #ffffff;
@@ -446,6 +450,16 @@
 @media (max-width: 380px) {
   .test-panel {
     padding: 22rpx;
+  }
+
+  .test-brand {
+    gap: 12rpx;
+  }
+
+  .focus-chip {
+    padding-right: 12rpx;
+    padding-left: 12rpx;
+    white-space: nowrap;
   }
 
   .direction-grid {
