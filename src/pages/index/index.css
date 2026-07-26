@@ -19,12 +19,6 @@
   box-shadow: 0 14rpx 40rpx rgba(28, 49, 44, 0.06);
 }
 
-.mode-card-primary {
-  border-color: #acd8ce;
-  background: linear-gradient(145deg, #ffffff 0%, #f2faf8 100%);
-  box-shadow: 0 18rpx 44rpx rgba(8, 125, 109, 0.1);
-}
-
 .mode-card-head {
   display: flex;
   align-items: flex-start;
@@ -35,7 +29,6 @@
 .mode-title,
 .mode-time,
 .mode-description,
-.mode-recommend,
 .mode-history {
   display: block;
 }
@@ -45,7 +38,6 @@
   font-weight: 760;
 }
 
-.mode-recommend,
 .mode-detail-tag {
   display: inline-flex;
   margin-bottom: 10rpx;
@@ -125,7 +117,6 @@
     font-size: 24PX;
   }
 
-  .mode-recommend,
   .mode-detail-tag {
     margin-bottom: 7PX;
     padding: 3PX 7PX;

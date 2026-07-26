@@ -160,7 +160,7 @@ function QuickResultView({ report }: { report: QuickReport }) {
     const modal = await Taro.showModal({
       title: '继续深度自测',
       content:
-        '完整观看一段激励视频，可开始 42 题深度自测。若广告不可用，将直接开放。',
+        '观看一段激励视频，可解锁本次 42 题深度自测。完整观看后将自动进入测试。',
       confirmText: '看广告'
     })
     if (!modal.confirm) return
@@ -229,9 +229,7 @@ function QuickResultView({ report }: { report: QuickReport }) {
           >
             {unlocking
               ? '正在准备广告…'
-              : isDeepUnlocked()
-                ? '开始深度自测'
-                : '看一段广告，解锁深度自测'}
+              : '开始深度自测'}
           </Button>
         </View>
 

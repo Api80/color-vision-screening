@@ -32,7 +32,7 @@ export default function HomePage() {
     const modal = await Taro.showModal({
       title: '解锁深度自测',
       content:
-        '完整观看一段激励视频，可开始本次 42 题深度自测。若广告暂时不可用，将直接为你开放。',
+        '观看一段激励视频，可解锁本次 42 题深度自测。完整观看后将自动进入测试。',
       confirmText: '看广告',
       cancelText: '暂不'
     })
@@ -46,26 +46,22 @@ export default function HomePage() {
       return
     }
     setDeepUnlocked(true)
-    if (result.source === 'fallback') {
-      Taro.showToast({ title: '广告不可用，已直接开放', icon: 'none' })
-    }
-    setTimeout(() => enterMode('deep'), result.source === 'fallback' ? 500 : 0)
+    enterMode('deep')
   }
 
   return (
     <View className='page home-page'>
       <View className='page-narrow'>
         <Text className='eyebrow'>辨色谱 · 色觉自测</Text>
-        <Text className='title'>先快速测一测，需要时再详细了解</Text>
+        <Text className='title'>选择自测方式</Text>
         <Text className='subtitle'>
-          通过动态小圆点图案，了解红绿色和蓝黄色辨别表现。无需登录，结果仅保存在当前设备。
+          通过动态小圆点图案，了解红绿色和蓝黄色辨别表现。两种模式均无需登录，结果仅保存在当前设备。
         </Text>
 
         <View className='mode-list'>
-          <View className='mode-card mode-card-primary'>
+          <View className='mode-card'>
             <View className='mode-card-head'>
               <View>
-                <Text className='mode-recommend'>推荐先测</Text>
                 <Text className='mode-title'>快速自测</Text>
               </View>
               <Text className='mode-time'>15 题 · 约 1–2 分钟</Text>
@@ -77,7 +73,7 @@ export default function HomePage() {
               className='primary-button mode-action'
               onClick={() => enterMode('quick')}
             >
-              免费开始
+              开始快速自测
             </Button>
             {hasQuickReport && (
               <Text
@@ -110,9 +106,7 @@ export default function HomePage() {
             >
               {unlocking
                 ? '正在准备广告…'
-                : deepUnlocked
-                  ? '开始深度自测'
-                  : '看一段广告，解锁深度自测'}
+                : '开始深度自测'}
             </Button>
             {hasDeepReport && (
               <Text
