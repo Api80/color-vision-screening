@@ -3,6 +3,8 @@ import devConfig from './dev'
 import prodConfig from './prod'
 
 export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
+  const h5PublicPath = process.env.H5_PUBLIC_PATH || '/'
+
   const baseConfig: UserConfigExport<'webpack5'> = {
     projectName: 'color-vision-screening',
     date: '2026-07-26',
@@ -39,7 +41,7 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
       }
     },
     h5: {
-      publicPath: '/',
+      publicPath: h5PublicPath,
       staticDirectory: 'static',
       postcss: {
         autoprefixer: {
@@ -58,4 +60,3 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
   }
   return merge({}, baseConfig, prodConfig)
 })
-
