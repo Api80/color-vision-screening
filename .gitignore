@@ -5,3 +5,5 @@ dist/
 *.log
 .idea/
 .vscode/
+project.private.config.json
+*.zip

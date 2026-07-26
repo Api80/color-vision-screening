@@ -3,7 +3,7 @@ import Taro, { useDidShow } from '@tarojs/taro'
 import { useState } from 'react'
 import BrandMark from '@/components/BrandMark'
 import HomeAdSlot from '@/components/HomeAdSlot'
-import { requestDeepUnlock } from '@/lib/ads'
+import { HAS_REWARDED_AD, requestDeepUnlock } from '@/lib/ads'
 import { isDeepUnlocked, loadReport } from '@/lib/storage'
 import './index.css'
 
@@ -27,6 +27,15 @@ export default function HomePage() {
     if (unlocking) return
     if (deepUnlocked) {
       enterMode('deep')
+      return
+    }
+
+    if (!HAS_REWARDED_AD) {
+      const result = await requestDeepUnlock()
+      if (result.unlocked) {
+        setDeepUnlocked(true)
+        enterMode('deep')
+      }
       return
     }
 

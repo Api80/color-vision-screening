@@ -96,6 +96,11 @@ button::after {
 .secondary-button,
 .choice-button {
   display: flex;
+  width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+  padding-right: 24rpx;
+  padding-left: 24rpx;
   align-items: center;
   justify-content: center;
   min-height: 92rpx;

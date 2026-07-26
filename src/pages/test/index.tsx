@@ -1,4 +1,4 @@
-import { Button, Canvas, Text, View } from '@tarojs/components'
+import { Button, Canvas, Image, Text, View } from '@tarojs/components'
 import Taro, { useLoad, useReady } from '@tarojs/taro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import BrandMark from '@/components/BrandMark'
@@ -12,7 +12,11 @@ import {
   updateAxisState
 } from '@/lib/adaptive'
 import { buildQuickReport, buildReport } from '@/lib/report'
-import { drawStimulus, resolveStimulusSeed } from '@/lib/stimulus'
+import {
+  drawStimulus,
+  drawStimulusOffscreen,
+  resolveStimulusSeed
+} from '@/lib/stimulus'
 import { consumePreparation, loadDevice, saveReport } from '@/lib/storage'
 import type {
   Answer,
@@ -24,6 +28,8 @@ import type {
 import './index.css'
 
 const CANVAS_ID = 'color-test-canvas'
+const USE_SYSTEM_OFFSCREEN_CANVAS =
+  process.env.TARO_ENV === 'weapp'
 const QUICK_TRIALS = 15
 const DEEP_TRIALS = 42
 const DEEP_BALANCED_TRIALS = 30
@@ -43,6 +49,18 @@ function initialStates(): Record<Axis, AxisState> {
     l: createAxisState('l'),
     m: createAxisState('m'),
     s: createAxisState('s')
+  }
+}
+
+function removeTemporaryStimulus(filePath: string) {
+  if (!filePath || process.env.TARO_ENV !== 'weapp') return
+  try {
+    Taro.getFileSystemManager().unlink({
+      filePath,
+      fail: () => undefined
+    })
+  } catch {
+    // 临时文件可能已被微信回收，无需影响测试流程。
   }
 }
 
@@ -66,8 +84,11 @@ export default function TestPage() {
   const [authorized, setAuthorized] = useState(false)
   const [canvasReady, setCanvasReady] = useState(false)
   const [drawing, setDrawing] = useState(true)
+  const [stimulusImage, setStimulusImage] = useState('')
   const [selectedAnswer, setSelectedAnswer] = useState<Answer>()
   const startedAt = useRef(Date.now())
+  const currentImagePathRef = useRef('')
+  const staleImagePathsRef = useRef<string[]>([])
 
   const totalTrials = mode === 'quick' ? QUICK_TRIALS : DEEP_TRIALS
   const quickTrial = quickOrder[Math.min(trialIndex, QUICK_TRIALS - 1)]
@@ -106,15 +127,110 @@ export default function TestPage() {
     setCanvasReady(true)
   })
 
+  useEffect(
+    () => () => {
+      const paths = [
+        currentImagePathRef.current,
+        ...staleImagePathsRef.current
+      ]
+      currentImagePathRef.current = ''
+      staleImagePathsRef.current = []
+      Array.from(new Set(paths)).forEach(removeTemporaryStimulus)
+    },
+    []
+  )
+
   useEffect(() => {
     if (!authorized || !canvasReady || trialIndex >= totalTrials) return
+    let cancelled = false
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
     setDrawing(true)
-    const timer = setTimeout(() => {
-      drawStimulus(CANVAS_ID, axis, contrast, direction, trialSeed)
+    setStimulusImage('')
+
+    const finishDrawing = (imagePath: string) => {
+      if (cancelled) return
+      const previousPath = currentImagePathRef.current
+      if (previousPath && previousPath !== imagePath) {
+        staleImagePathsRef.current.push(previousPath)
+      }
+      currentImagePathRef.current = imagePath
+      setStimulusImage(imagePath)
       startedAt.current = Date.now()
       setDrawing(false)
+    }
+
+    const renderWithSystemOffscreenCanvas = async (attempt = 0) => {
+      try {
+        const imagePath = await drawStimulusOffscreen(
+          axis,
+          contrast,
+          direction,
+          trialSeed
+        )
+        if (!imagePath) throw new Error('Offscreen canvas returned no image')
+        finishDrawing(imagePath)
+      } catch {
+        if (cancelled) return
+        if (attempt < 2) {
+          retryTimer = setTimeout(
+            () => renderWithSystemOffscreenCanvas(attempt + 1),
+            80
+          )
+          return
+        }
+        Taro.showToast({
+          title: '题图生成失败，请重试',
+          icon: 'none'
+        })
+      }
+    }
+
+    const exportCanvas = (attempt = 0) => {
+      Taro.canvasToTempFilePath({
+        canvasId: CANVAS_ID,
+        x: 0,
+        y: 0,
+        width: 320,
+        height: 320,
+        destWidth: 640,
+        destHeight: 640,
+        fileType: 'png'
+      })
+        .then((result) => {
+          finishDrawing(result.tempFilePath)
+        })
+        .catch(() => {
+          if (cancelled) return
+          if (attempt < 2) {
+            retryTimer = setTimeout(() => exportCanvas(attempt + 1), 80)
+            return
+          }
+          Taro.showToast({
+            title: '题图生成失败，请重试',
+            icon: 'none'
+          })
+        })
+    }
+
+    const timer = setTimeout(() => {
+      if (USE_SYSTEM_OFFSCREEN_CANVAS) {
+        renderWithSystemOffscreenCanvas()
+        return
+      }
+      drawStimulus(
+        CANVAS_ID,
+        axis,
+        contrast,
+        direction,
+        trialSeed,
+        () => exportCanvas()
+      )
     }, 60)
-    return () => clearTimeout(timer)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      if (retryTimer) clearTimeout(retryTimer)
+    }
   }, [
     authorized,
     axis,
@@ -179,6 +295,12 @@ export default function TestPage() {
 
   const progress = Math.round(((trialIndex + 1) / totalTrials) * 100)
 
+  const cleanupStaleImages = () => {
+    const stalePaths = staleImagePathsRef.current
+    staleImagePathsRef.current = []
+    Array.from(new Set(stalePaths)).forEach(removeTemporaryStimulus)
+  }
+
   if (!authorized) {
     return (
       <View className='test-page test-gate'>
@@ -219,20 +341,23 @@ export default function TestPage() {
         </View>
 
         <View className='canvas-shell'>
-          <Canvas
-            canvasId={CANVAS_ID}
-            id={CANVAS_ID}
-            width='320px'
-            height='320px'
-            className='test-canvas'
-            aria-label='由彩色小圆点组成的缺口圆环'
-          />
-          {drawing && (
-            <View className='canvas-loading'>
-              <View className='loading-dot' />
-              <Text>准备下一题…</Text>
-            </View>
-          )}
+          <View className='canvas-stage'>
+            {stimulusImage && (
+              <Image
+                className='stimulus-image'
+                src={stimulusImage}
+                mode='widthFix'
+                aria-label='由彩色小圆点组成的缺口圆环'
+                onLoad={cleanupStaleImages}
+              />
+            )}
+            {drawing && (
+              <View className='canvas-loading'>
+                <View className='loading-dot' />
+                <Text>准备下一题…</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <Text className='answer-prompt'>你看到的缺口朝向</Text>
@@ -272,6 +397,16 @@ export default function TestPage() {
           <Text>图案每题都会变化，请勿截图放大，也不需要猜数字。</Text>
         </View>
       </View>
+
+      {!USE_SYSTEM_OFFSCREEN_CANVAS && (
+        <Canvas
+          canvasId={CANVAS_ID}
+          id={CANVAS_ID}
+          width='320px'
+          height='320px'
+          className='render-canvas'
+        />
+      )}
     </View>
   )
 }

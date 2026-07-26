@@ -4,6 +4,12 @@ import prodConfig from './prod'
 
 export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
   const h5PublicPath = process.env.H5_PUBLIC_PATH || '/'
+  const adUnitIds = {
+    weappHome: process.env.TARO_APP_WEAPP_HOME_AD_UNIT_ID || '',
+    weappRewarded: process.env.TARO_APP_WEAPP_REWARDED_AD_UNIT_ID || '',
+    ttHome: process.env.TARO_APP_TT_HOME_AD_UNIT_ID || '',
+    ttRewarded: process.env.TARO_APP_TT_REWARDED_AD_UNIT_ID || ''
+  }
 
   const baseConfig: UserConfigExport<'webpack5'> = {
     projectName: 'color-vision-screening',
@@ -28,6 +34,12 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
     ],
     alias: {
       '@': require('path').resolve(__dirname, '..', 'src')
+    },
+    defineConstants: {
+      __WEAPP_HOME_AD_UNIT_ID__: JSON.stringify(adUnitIds.weappHome),
+      __WEAPP_REWARDED_AD_UNIT_ID__: JSON.stringify(adUnitIds.weappRewarded),
+      __TT_HOME_AD_UNIT_ID__: JSON.stringify(adUnitIds.ttHome),
+      __TT_REWARDED_AD_UNIT_ID__: JSON.stringify(adUnitIds.ttRewarded)
     },
     mini: {
       postcss: {

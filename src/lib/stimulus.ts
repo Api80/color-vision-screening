@@ -12,6 +12,9 @@ const DOT_JITTER = 1.15
 const MIN_FIGURE_DOTS = 160
 const MIN_BACKGROUND_DOTS = 700
 const MAX_GENERATION_ATTEMPTS = 5
+const IMAGE_FRAME_WIDTH = 4
+const IMAGE_OUTER_RADIUS = 14
+const IMAGE_INNER_RADIUS = 10
 
 const DIRECTION_ANGLES: Record<Direction, number> = {
   right: 0,
@@ -41,6 +44,55 @@ interface StimulusModel {
   backgroundDotCount: number
   foreground: string[]
   background: string[]
+}
+
+interface StimulusPaintContext {
+  clearRect: (x: number, y: number, width: number, height: number) => void
+  fillRect: (x: number, y: number, width: number, height: number) => void
+  save: () => void
+  restore: () => void
+  beginPath: () => void
+  closePath: () => void
+  moveTo: (x: number, y: number) => void
+  lineTo: (x: number, y: number) => void
+  quadraticCurveTo: (
+    cpx: number,
+    cpy: number,
+    x: number,
+    y: number
+  ) => void
+  arc: (
+    x: number,
+    y: number,
+    radius: number,
+    startAngle: number,
+    endAngle: number
+  ) => void
+  fill: () => void
+  stroke: () => void
+  clip: () => void
+  setFillStyle: (color: string) => void
+  setStrokeStyle: (color: string) => void
+  setLineWidth: (width: number) => void
+}
+
+interface ModernCanvasContext {
+  fillStyle: string
+  strokeStyle: string
+  lineWidth: number
+  clearRect: StimulusPaintContext['clearRect']
+  fillRect: StimulusPaintContext['fillRect']
+  save: StimulusPaintContext['save']
+  restore: StimulusPaintContext['restore']
+  beginPath: StimulusPaintContext['beginPath']
+  closePath: StimulusPaintContext['closePath']
+  moveTo: StimulusPaintContext['moveTo']
+  lineTo: StimulusPaintContext['lineTo']
+  quadraticCurveTo: StimulusPaintContext['quadraticCurveTo']
+  arc: StimulusPaintContext['arc']
+  fill: StimulusPaintContext['fill']
+  stroke: StimulusPaintContext['stroke']
+  clip: StimulusPaintContext['clip']
 }
 
 export interface StimulusValidation {
@@ -163,18 +215,40 @@ export function resolveStimulusSeed(
   return initialSeed
 }
 
-export function drawStimulus(
-  canvasId: string,
-  axis: Axis,
-  contrast: number,
-  direction: Direction,
-  seed: number
+function paintStimulus(
+  context: StimulusPaintContext,
+  model: StimulusModel
 ) {
-  const context = Taro.createCanvasContext(canvasId)
-  const model = buildStimulusModel(axis, contrast, direction, seed)
+  context.clearRect(0, 0, SIZE, SIZE)
 
+  const roundedRect = (
+    inset: number,
+    radius: number
+  ) => {
+    const start = inset
+    const end = SIZE - inset
+    context.beginPath()
+    context.moveTo(start + radius, start)
+    context.lineTo(end - radius, start)
+    context.quadraticCurveTo(end, start, end, start + radius)
+    context.lineTo(end, end - radius)
+    context.quadraticCurveTo(end, end, end - radius, end)
+    context.lineTo(start + radius, end)
+    context.quadraticCurveTo(start, end, start, end - radius)
+    context.lineTo(start, start + radius)
+    context.quadraticCurveTo(start, start, start + radius, start)
+    context.closePath()
+  }
+
+  roundedRect(0, IMAGE_OUTER_RADIUS)
+  context.setFillStyle('#ffffff')
+  context.fill()
+
+  context.save()
+  roundedRect(IMAGE_FRAME_WIDTH, IMAGE_INNER_RADIUS)
   context.setFillStyle('#ddd9d0')
-  context.fillRect(0, 0, SIZE, SIZE)
+  context.fill()
+  context.clip()
 
   model.groups.forEach((dots, color) => {
     context.beginPath()
@@ -191,5 +265,69 @@ export function drawStimulus(
   context.setStrokeStyle('rgba(60, 68, 66, 0.18)')
   context.setLineWidth(1)
   context.stroke()
-  context.draw(false)
+  context.restore()
+}
+
+export function drawStimulusOffscreen(
+  axis: Axis,
+  contrast: number,
+  direction: Direction,
+  seed: number
+): Promise<string> {
+  const canvas = Taro.createOffscreenCanvas({
+    type: '2d',
+    width: SIZE,
+    height: SIZE
+  })
+  const modern = canvas.getContext('2d') as unknown as ModernCanvasContext
+  const context: StimulusPaintContext = {
+    clearRect: modern.clearRect.bind(modern),
+    fillRect: modern.fillRect.bind(modern),
+    save: modern.save.bind(modern),
+    restore: modern.restore.bind(modern),
+    beginPath: modern.beginPath.bind(modern),
+    closePath: modern.closePath.bind(modern),
+    moveTo: modern.moveTo.bind(modern),
+    lineTo: modern.lineTo.bind(modern),
+    quadraticCurveTo: modern.quadraticCurveTo.bind(modern),
+    arc: modern.arc.bind(modern),
+    fill: modern.fill.bind(modern),
+    stroke: modern.stroke.bind(modern),
+    clip: modern.clip.bind(modern),
+    setFillStyle: (color) => {
+      modern.fillStyle = color
+    },
+    setStrokeStyle: (color) => {
+      modern.strokeStyle = color
+    },
+    setLineWidth: (width) => {
+      modern.lineWidth = width
+    }
+  }
+  paintStimulus(context, buildStimulusModel(axis, contrast, direction, seed))
+  return Taro.canvasToTempFilePath({
+    canvas: canvas as never,
+    x: 0,
+    y: 0,
+    width: SIZE,
+    height: SIZE,
+    destWidth: SIZE * 2,
+    destHeight: SIZE * 2,
+    fileType: 'png'
+  }).then((result) => result.tempFilePath)
+}
+
+export function drawStimulus(
+  canvasId: string,
+  axis: Axis,
+  contrast: number,
+  direction: Direction,
+  seed: number,
+  onComplete?: () => void
+) {
+  const context = Taro.createCanvasContext(canvasId)
+  const model = buildStimulusModel(axis, contrast, direction, seed)
+
+  paintStimulus(context, model)
+  context.draw(false, onComplete)
 }

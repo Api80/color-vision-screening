@@ -1,7 +1,7 @@
 import { Button, Text, View } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { useState } from 'react'
-import { requestDeepUnlock } from '@/lib/ads'
+import { HAS_REWARDED_AD, requestDeepUnlock } from '@/lib/ads'
 import { QUICK_REPORT_VERSION, REPORT_VERSION } from '@/lib/report'
 import {
   isDeepUnlocked,
@@ -157,6 +157,15 @@ function QuickResultView({ report }: { report: QuickReport }) {
       Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
       return
     }
+
+    if (!HAS_REWARDED_AD) {
+      const result = await requestDeepUnlock()
+      if (result.unlocked) {
+        Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
+      }
+      return
+    }
+
     const modal = await Taro.showModal({
       title: '继续深度自测',
       content:

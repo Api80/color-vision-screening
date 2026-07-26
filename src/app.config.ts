@@ -13,4 +13,3 @@ export default defineAppConfig({
     backgroundColor: '#f5f3ee'
   }
 })
-

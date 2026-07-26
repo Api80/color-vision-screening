@@ -1,3 +1,4 @@
+import Taro from '@tarojs/taro'
 import { unlockDeepTest } from './storage'
 
 type RewardCloseResult = { isEnded?: boolean }
@@ -19,26 +20,28 @@ export type DeepUnlockResult =
   | { unlocked: false; source: 'closed-early' }
 
 export const HOME_AD_UNIT_ID =
-  process.env.TARO_ENV === 'weapp'
-    ? process.env.TARO_APP_WEAPP_HOME_AD_UNIT_ID || ''
-    : process.env.TARO_ENV === 'tt'
-      ? process.env.TARO_APP_TT_HOME_AD_UNIT_ID || ''
+  Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+    ? __WEAPP_HOME_AD_UNIT_ID__
+    : Taro.getEnv() === Taro.ENV_TYPE.TT
+      ? __TT_HOME_AD_UNIT_ID__
       : ''
 
 const REWARDED_AD_UNIT_ID =
-  process.env.TARO_ENV === 'weapp'
-    ? process.env.TARO_APP_WEAPP_REWARDED_AD_UNIT_ID || ''
-    : process.env.TARO_ENV === 'tt'
-      ? process.env.TARO_APP_TT_REWARDED_AD_UNIT_ID || ''
+  Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+    ? __WEAPP_REWARDED_AD_UNIT_ID__
+    : Taro.getEnv() === Taro.ENV_TYPE.TT
+      ? __TT_REWARDED_AD_UNIT_ID__
       : ''
+
+export const HAS_REWARDED_AD = Boolean(REWARDED_AD_UNIT_ID)
 
 function platformApi(): MiniProgramGlobal | undefined {
   const runtime = globalThis as typeof globalThis & {
     wx?: MiniProgramGlobal
     tt?: MiniProgramGlobal
   }
-  if (process.env.TARO_ENV === 'weapp') return runtime.wx
-  if (process.env.TARO_ENV === 'tt') return runtime.tt
+  if (Taro.getEnv() === Taro.ENV_TYPE.WEAPP) return runtime.wx
+  if (Taro.getEnv() === Taro.ENV_TYPE.TT) return runtime.tt
   return undefined
 }
 
@@ -48,8 +51,12 @@ function allowFallback(): DeepUnlockResult {
 }
 
 export async function requestDeepUnlock(): Promise<DeepUnlockResult> {
+  if (!REWARDED_AD_UNIT_ID) {
+    return allowFallback()
+  }
+
   const createRewardedVideoAd = platformApi()?.createRewardedVideoAd
-  if (!REWARDED_AD_UNIT_ID || !createRewardedVideoAd) {
+  if (!createRewardedVideoAd) {
     return allowFallback()
   }
 
