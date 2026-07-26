@@ -145,14 +145,16 @@ export default function TestPage() {
             direction,
             measuredResponseMs,
             trialSeed,
-            contrast
+            contrast,
+            trialIndex
           )
         : updateAxisState(
             states[axis],
             answer,
             direction,
             measuredResponseMs,
-            trialSeed
+            trialSeed,
+            trialIndex
           )
     const nextStates = { ...states, [axis]: nextAxisState }
     setStates(nextStates)

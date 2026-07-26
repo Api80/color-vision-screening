@@ -11,6 +11,7 @@ export interface TrialRecord {
   correct: boolean
   responseMs: number
   seed: number
+  sequence?: number
 }
 
 export interface AxisState {
@@ -41,9 +42,10 @@ export interface AxisResult {
 }
 
 export type ReportDetailLevel = 'full' | 'preliminary'
+export type DeepSessionStatus = 'valid' | 'answer-anomaly' | 'incomplete'
+export type TypeClarity = 'clear' | 'unclear'
 export type AnalysisReasonCode =
   | 'fast-responses'
-  | 'insufficient-convergence'
   | 'incomplete-records'
 
 export interface AnalysisReason {
@@ -94,6 +96,8 @@ export interface ScreeningReport {
   confidenceLabel: string
   confidenceScore: number
   detailLevel: ReportDetailLevel
+  sessionStatus: DeepSessionStatus
+  typeClarity: TypeClarity
   analysisReasons: AnalysisReason[]
   qualityWarnings: string[]
   axes: Record<Axis, AxisResult>

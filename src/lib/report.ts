@@ -15,7 +15,7 @@ import {
   MIN_CONTRAST
 } from './adaptive'
 
-export const REPORT_VERSION = '0.2.1'
+export const REPORT_VERSION = '0.3.0'
 export const QUICK_REPORT_VERSION = '0.1.0'
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -61,10 +61,11 @@ export function buildReport(
     (left, right) => right.score - left.score
   )
   const top = ranked[0]
-  const second = ranked[1]
   const maxScore = top.score
-  const combinedHigh = top.score + second.score
-  const gap = top.score - second.score
+  const redGreenScore = Math.max(axes.l.score, axes.m.score)
+  const redGreenGap = Math.abs(axes.l.score - axes.m.score)
+  const blueYellowScore = axes.s.score
+  const directionGap = Math.abs(redGreenScore - blueYellowScore)
 
   let type: ScreeningReport['type'] = 'uncertain'
   let typeLabel = '结果方向暂不明确'
@@ -72,15 +73,24 @@ export function buildReport(
   if (maxScore < 25) {
     type = 'typical'
     typeLabel = '本次辨色表现接近正常范围'
-  } else if (gap < 10 && combinedHigh >= 100) {
+  } else if (
+    redGreenScore >= 50 &&
+    blueYellowScore >= 50 &&
+    directionGap < 10
+  ) {
     type = 'broad'
     typeLabel = '多个方向辨色存在困难'
-  } else if (top.axis === 'l') {
-    type = 'protan'
-    typeLabel = '红绿色辨别困难（偏红色觉型）'
-  } else if (top.axis === 'm') {
-    type = 'deutan'
-    typeLabel = '红绿色辨别困难（偏绿色觉型）'
+  } else if (redGreenScore >= blueYellowScore) {
+    if (redGreenGap < 10) {
+      type = 'uncertain'
+      typeLabel = '红绿色辨别困难（具体类型暂不明确）'
+    } else if (axes.l.score > axes.m.score) {
+      type = 'protan'
+      typeLabel = '红绿色辨别困难（偏红色觉型）'
+    } else {
+      type = 'deutan'
+      typeLabel = '红绿色辨别困难（偏绿色觉型）'
+    }
   } else {
     type = 'tritan'
     typeLabel = '蓝黄色辨别困难'
@@ -91,24 +101,43 @@ export function buildReport(
   if (maxScore >= 50) severityLabel = '明显辨色困难'
   if (maxScore >= 75) severityLabel = '严重辨色困难'
 
-  const records = AXES.flatMap((axis) => states[axis].history)
+  const records = AXES.flatMap((axis) => states[axis].history).sort(
+    (left, right) =>
+      (left.sequence ?? Number.MAX_SAFE_INTEGER) -
+      (right.sequence ?? Number.MAX_SAFE_INTEGER)
+  )
   const ultraFast = records.filter((record) => record.responseMs < 180).length
   const fastThreshold = Math.max(8, Math.ceil(records.length * 0.25))
-  const hasFastResponsePattern = ultraFast >= fastThreshold
+  let consecutiveUltraFast = 0
+  let maximumConsecutiveUltraFast = 0
+  records.forEach((record) => {
+    consecutiveUltraFast =
+      record.responseMs < 180 ? consecutiveUltraFast + 1 : 0
+    maximumConsecutiveUltraFast = Math.max(
+      maximumConsecutiveUltraFast,
+      consecutiveUltraFast
+    )
+  })
+  const hasFastResponsePattern =
+    records.length >= 42 &&
+    ultraFast >= fastThreshold &&
+    maximumConsecutiveUltraFast >= 4
   const unresolvedAxes = AXES.filter(
     (axis) => !isAxisEvidenceSufficient(states[axis])
   )
+  const sessionStatus: ScreeningReport['sessionStatus'] =
+    records.length < 42
+      ? 'incomplete'
+      : hasFastResponsePattern
+        ? 'answer-anomaly'
+        : 'valid'
+  const typeClarity: ScreeningReport['typeClarity'] =
+    type === 'broad' || type === 'uncertain' ? 'unclear' : 'clear'
   const analysisReasons: ScreeningReport['analysisReasons'] = []
   if (hasFastResponsePattern) {
     analysisReasons.push({
       code: 'fast-responses',
-      message: '本次部分题目的作答间隔较短。'
-    })
-  }
-  if (unresolvedAxes.length > 0) {
-    analysisReasons.push({
-      code: 'insufficient-convergence',
-      message: '部分辨色方向尚未形成足够清晰的变化规律。'
+      message: '检测到部分题目出现连续快速作答。'
     })
   }
   if (records.length < 42) {
@@ -118,7 +147,7 @@ export function buildReport(
     })
   }
   const detailLevel: ScreeningReport['detailLevel'] =
-    analysisReasons.length > 0 ? 'preliminary' : 'full'
+    sessionStatus === 'valid' ? 'full' : 'preliminary'
   const qualityWarnings = analysisReasons.map((reason) => reason.message)
 
   const confidenceScore = clamp(
@@ -140,6 +169,8 @@ export function buildReport(
     confidenceLabel,
     confidenceScore,
     detailLevel,
+    sessionStatus,
+    typeClarity,
     analysisReasons,
     qualityWarnings,
     axes,

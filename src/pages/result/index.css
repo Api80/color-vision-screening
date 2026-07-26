@@ -545,6 +545,12 @@
   background: #f7fbfa;
 }
 
+.clarity-note-card {
+  margin-top: 32rpx;
+  border-color: #c9dfd9;
+  background: #f7fbfa;
+}
+
 .quick-explain-card {
   margin-top: 32rpx;
 }
@@ -849,21 +855,17 @@
     font-size: 13PX;
   }
 
-  .retry-reasons-card {
+  .retry-callout,
+  .clarity-note-card {
     margin-top: 26PX;
   }
 
   .retry-reason-list {
     margin-top: 16PX;
+    padding-top: 14PX;
   }
 
   .retry-reason {
-    font-size: 14PX;
-  }
-
-  .retry-guidance {
-    margin-top: 14PX;
-    padding-top: 13PX;
     font-size: 14PX;
   }
 

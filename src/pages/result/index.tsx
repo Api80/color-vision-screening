@@ -3,7 +3,12 @@ import Taro, { useDidShow, useRouter } from '@tarojs/taro'
 import { useState } from 'react'
 import { requestDeepUnlock } from '@/lib/ads'
 import { QUICK_REPORT_VERSION, REPORT_VERSION } from '@/lib/report'
-import { isDeepUnlocked, loadReport, unlockDeepTest } from '@/lib/storage'
+import {
+  isDeepUnlocked,
+  loadDeepClarityState,
+  loadReport,
+  unlockDeepTest
+} from '@/lib/storage'
 import type {
   Axis,
   ColorVisionReport,
@@ -69,9 +74,10 @@ const TYPE_META: Record<
       '两个或更多辨色方向同时偏高，可能与显示条件、注意状态或多方向辨色问题有关。'
   },
   uncertain: {
-    headline: '本次结果不够清晰',
-    subtype: '暂时无法稳定分型',
-    explanation: '当前作答没有形成稳定方向，建议调整屏幕和环境后重新测试。'
+    headline: '红绿色辨别存在困难',
+    subtype: '红绿色觉具体类型暂不明确',
+    explanation:
+      '本次可以提示红绿色辨别困难方向，但偏红型和偏绿型的表现较为接近。'
   }
 }
 
@@ -103,36 +109,6 @@ const QUICK_META: Record<
     headline: '本次结果不够清晰',
     lead: '较容易的题目出现多次错误或作答过快，建议调整状态后重新测试。',
     tone: 'mild'
-  }
-}
-
-const PRELIMINARY_DEEP_META: Record<
-  ScreeningReport['type'],
-  { headline: string; lead: string }
-> = {
-  typical: {
-    headline: '本次辨色表现接近正常范围',
-    lead: '现有作答中暂未发现明确的红绿或蓝黄辨色困难方向。'
-  },
-  protan: {
-    headline: '可能存在红绿色辨别困难',
-    lead: '现有作答可以提示红绿色辨别困难方向。'
-  },
-  deutan: {
-    headline: '可能存在红绿色辨别困难',
-    lead: '现有作答可以提示红绿色辨别困难方向。'
-  },
-  tritan: {
-    headline: '可能存在蓝黄色辨别困难',
-    lead: '现有作答可以提示蓝黄色辨别困难方向。'
-  },
-  broad: {
-    headline: '可能存在多个方向的辨色困难',
-    lead: '现有作答可以提示多个辨色方向的困难表现。'
-  },
-  uncertain: {
-    headline: '本次辨色方向暂不明确',
-    lead: '现有作答暂未形成明确的单一辨色困难方向。'
   }
 }
 
@@ -284,65 +260,58 @@ function QuickResultView({ report }: { report: QuickReport }) {
   )
 }
 
-function DeepResultView({ report }: { report: ScreeningReport }) {
-  const isPreliminary =
-    report.detailLevel === 'preliminary' ||
-    (!report.detailLevel && report.confidenceScore < 60)
+function DeepResultView({
+  report,
+  unclearCount
+}: {
+  report: ScreeningReport
+  unclearCount: number
+}) {
+  const restartDeepTest = () => {
+    unlockDeepTest()
+    Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
+  }
 
-  if (isPreliminary) {
-    const preliminaryMeta = PRELIMINARY_DEEP_META[report.type]
-    const reasons = report.analysisReasons?.length
-      ? report.analysisReasons.map((reason) => {
-          if (reason.code === 'fast-responses') {
-            return '本次部分题目的作答间隔较短。重新测试时请凭第一眼作答，同时避免连续快速点击。'
-          }
-          if (reason.code === 'incomplete-records') {
-            return '本次未获得完整作答记录，建议重新完成测试。'
-          }
-          return '部分辨色方向还需要更多稳定作答，才能进一步细分。'
-        })
-      : (() => {
-          const legacyReasons: string[] = []
-          const ultraFast = report.records.filter(
-            (record) => record.responseMs < 180
-          ).length
-          if (
-            ultraFast >=
-            Math.max(8, Math.ceil(report.records.length * 0.25))
-          ) {
-            legacyReasons.push(
-              '本次部分题目的作答间隔较短。重新测试时请凭第一眼作答，同时避免连续快速点击。'
-            )
-          }
-          const hasUnresolvedAxis = (['l', 'm', 's'] as Axis[]).some(
-            (axis) => {
-              const result = report.axes[axis]
-              const atBoundary =
-                result.threshold <= 0.022 || result.threshold >= 0.316
-              return !atBoundary && result.reversals < 2
-            }
-          )
-          if (hasUnresolvedAxis) {
-            legacyReasons.push(
-              '部分辨色方向还需要更多稳定作答，才能进一步细分。'
-            )
-          }
-          return legacyReasons
-        })()
-
+  if (report.sessionStatus === 'incomplete') {
     return (
       <View className='page result-page retry-result-page'>
         <View className='page-narrow'>
-          <Text className='eyebrow'>深度自测 · 初步结果</Text>
-          <Text className='result-type'>{preliminaryMeta.headline}</Text>
-          <Text className='result-lead'>{preliminaryMeta.lead}</Text>
-
+          <Text className='eyebrow'>深度自测 · 测试未完成</Text>
+          <Text className='result-type'>本次测试未完整完成</Text>
+          <Text className='result-lead'>
+            完成全部题目后才能生成深度自测结果。
+          </Text>
           <View className='card preliminary-result-card'>
-            <Text className='section-title'>本次已生成初步结果</Text>
+            <Text className='section-title'>需要重新开始测试</Text>
             <Text className='result-copy'>
-              现有结果可以作为当前辨色表现的参考。由于部分辨色方向的作答信息还不够完整，本次暂不细分具体类型和程度。
+              本次没有获得完整的42题作答记录，因此不进行辨色方向和程度分析。
             </Text>
           </View>
+          <View className='button-stack'>
+            <Button className='primary-button' onClick={restartDeepTest}>
+              重新开始测试
+            </Button>
+            <Button
+              className='secondary-button'
+              onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}
+            >
+              返回首页
+            </Button>
+          </View>
+        </View>
+      </View>
+    )
+  }
+
+  if (report.sessionStatus === 'answer-anomaly') {
+    return (
+      <View className='page result-page retry-result-page'>
+        <View className='page-narrow'>
+          <Text className='eyebrow'>深度自测 · 作答异常</Text>
+          <Text className='result-type'>本次结果需要重新确认</Text>
+          <Text className='result-lead'>
+            检测到部分题目出现连续快速作答。
+          </Text>
 
           <View className='retry-callout'>
             <View className='retry-callout-heading'>
@@ -350,36 +319,26 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
               <View className='retry-callout-heading-copy'>
                 <Text className='retry-callout-title'>建议重新测试</Text>
                 <Text className='retry-callout-copy'>
-                  重新测试可以补充辨色方向的分析信息，有助于获得更完整的类型倾向和困难程度结果。
+                  本次结果暂不建议作为参考。为避免给出可能误导的结论，请重新完成测试。
                 </Text>
               </View>
             </View>
             <View className='retry-reason-list'>
-              {(reasons.length
-                ? reasons
-                : ['部分辨色方向还需要更多稳定作答，才能进一步细分。']
-              ).map((reason) => (
-                <Text className='retry-reason' key={reason}>
-                  {reason}
-                </Text>
-              ))}
+              <Text className='retry-reason'>
+                重新测试时请凭第一眼逐题作答，同时避免连续快速点击。
+              </Text>
             </View>
           </View>
+
           <View className='button-stack'>
-            <Button
-              className='primary-button'
-              onClick={() => {
-                unlockDeepTest()
-                Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
-              }}
-            >
-              重新测试，完善结果
+            <Button className='primary-button' onClick={restartDeepTest}>
+              重新测试
             </Button>
             <Button
               className='secondary-button'
               onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}
             >
-              暂时保留本次结果
+              返回首页
             </Button>
           </View>
         </View>
@@ -394,6 +353,8 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
   const overallGrade = scoreGrade(maxScore)
   const typeMeta = TYPE_META[report.type]
   const markerPosition = Math.min(98, Math.max(2, maxScore))
+  const typeIsUnclear = report.typeClarity === 'unclear'
+  const repeatedUnclear = typeIsUnclear && unclearCount >= 2
 
   return (
     <View className='page result-page'>
@@ -409,6 +370,17 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
           </Text>
         </View>
         <Text className='result-lead'>{typeMeta.explanation}</Text>
+
+        {typeIsUnclear && (
+          <View className='card clarity-note-card'>
+            <Text className='section-title'>具体类型暂不明确</Text>
+            <Text className='result-copy'>
+              {repeatedUnclear
+                ? '多次屏幕自测均未形成明确的具体类型方向。如需进一步确认，建议进行标准色觉检查。'
+                : '本次结果仍可用于了解辨色困难方向。如果希望进一步确认具体类型，可以在状态合适时再次测试。'}
+            </Text>
+          </View>
+        )}
 
         <View className='diagnosis-limit'>
           <Text className='diagnosis-title'>本次辨色困难程度</Text>
@@ -498,14 +470,11 @@ function DeepResultView({ report }: { report: ScreeningReport }) {
           本报告不能用于驾照、招录、入学、征兵或其他职业资格判定。
         </View>
         <View className='button-stack'>
-          <Button
-            className='primary-button'
-            onClick={() =>
-              Taro.redirectTo({ url: '/pages/prepare/index?mode=deep' })
-            }
-          >
-            重新深度自测
-          </Button>
+          {!repeatedUnclear && (
+            <Button className='primary-button' onClick={restartDeepTest}>
+              {typeIsUnclear ? '再测一次进行确认' : '重新深度自测'}
+            </Button>
+          )}
           <Button
             className='secondary-button'
             onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}
@@ -523,9 +492,15 @@ export default function ResultPage() {
   const requestedMode: TestMode =
     router.params.mode === 'deep' ? 'deep' : 'quick'
   const [report, setReport] = useState<ColorVisionReport>()
+  const [deepUnclearCount, setDeepUnclearCount] = useState(0)
 
   useDidShow(() => {
     setReport(loadReport(requestedMode))
+    setDeepUnclearCount(
+      requestedMode === 'deep'
+        ? loadDeepClarityState()?.consecutiveUnclearCount ?? 0
+        : 0
+    )
   })
 
   if (!report) return <EmptyResult mode={requestedMode} />
@@ -558,6 +533,6 @@ export default function ResultPage() {
   return report.mode === 'quick' ? (
     <QuickResultView report={report} />
   ) : (
-    <DeepResultView report={report} />
+    <DeepResultView report={report} unclearCount={deepUnclearCount} />
   )
 }

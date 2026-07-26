@@ -100,7 +100,8 @@ export function updateAxisState(
   answer: Answer,
   direction: Direction,
   responseMs: number,
-  seed: number
+  seed: number,
+  sequence?: number
 ): AxisState {
   const correct = answer === direction
   let streak = correct ? state.correctStreak + 1 : 0
@@ -128,7 +129,8 @@ export function updateAxisState(
     answer,
     correct,
     responseMs,
-    seed
+    seed,
+    sequence
   }
 
   return {
@@ -150,7 +152,8 @@ export function recordFixedTrial(
   direction: Direction,
   responseMs: number,
   seed: number,
-  contrast: number
+  contrast: number,
+  sequence?: number
 ): AxisState {
   const record: TrialRecord = {
     axis: state.axis,
@@ -159,7 +162,8 @@ export function recordFixedTrial(
     answer,
     correct: answer === direction,
     responseMs,
-    seed
+    seed,
+    sequence
   }
   return { ...state, history: [...state.history, record] }
 }
