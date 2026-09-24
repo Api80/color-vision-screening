@@ -578,6 +578,36 @@
   display: block;
 }
 
+.result-share-card {
+  margin-top: 28rpx;
+  padding: 28rpx;
+  border: 2rpx solid #c5ded8;
+  border-radius: 24rpx;
+  background: #f3faf8;
+}
+
+.result-share-title,
+.result-share-description {
+  display: block;
+}
+
+.result-share-title {
+  color: var(--ink);
+  font-size: 28rpx;
+  font-weight: 760;
+}
+
+.result-share-description {
+  margin-top: 8rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.result-share-button {
+  margin-top: 22rpx;
+}
+
 .quick-direction-name {
   color: var(--muted);
   font-size: 21rpx;
@@ -915,5 +945,24 @@
   .result-time {
     margin-top: 22PX;
     font-size: 12PX;
+  }
+
+  .result-share-card {
+    margin-top: 24PX;
+    padding: 22PX;
+    border-radius: 18PX;
+  }
+
+  .result-share-title {
+    font-size: 17PX;
+  }
+
+  .result-share-description {
+    margin-top: 6PX;
+    font-size: 13PX;
+  }
+
+  .result-share-button {
+    margin-top: 18PX;
   }
 }

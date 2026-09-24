@@ -1,8 +1,10 @@
 import { Button, Text, View } from '@tarojs/components'
-import Taro, { useDidShow, useRouter } from '@tarojs/taro'
+import Taro, { useDidShow, useRouter, useShareAppMessage } from '@tarojs/taro'
 import { useState } from 'react'
+import ResultShareCard from '@/components/ResultShareCard'
 import { HAS_REWARDED_AD, requestDeepUnlock } from '@/lib/ads'
 import { QUICK_REPORT_VERSION, REPORT_VERSION } from '@/lib/report'
+import { createShareMessage } from '@/lib/share'
 import {
   isDeepUnlocked,
   loadDeepClarityState,
@@ -246,6 +248,7 @@ function QuickResultView({ report }: { report: QuickReport }) {
         <View className='notice'>
           本次结果反映你在当前屏幕条件下的辨色表现，不能用于体检或资格判定。
         </View>
+        <ResultShareCard report={report} />
         <View className='button-stack'>
           <Button
             className='secondary-button'
@@ -473,6 +476,7 @@ function DeepResultView({
         </View>
 
         <Text className='result-time'>测试时间：{formatDate(report.createdAt)}</Text>
+        <ResultShareCard report={report} />
         <View className='button-stack'>
           {!repeatedUnclear && (
             <Button className='primary-button' onClick={restartDeepTest}>
@@ -497,6 +501,15 @@ export default function ResultPage() {
     router.params.mode === 'deep' ? 'deep' : 'quick'
   const [report, setReport] = useState<ColorVisionReport>()
   const [deepUnclearCount, setDeepUnclearCount] = useState(0)
+
+  useShareAppMessage(() =>
+    report
+      ? createShareMessage(report)
+      : {
+          title: '来做一次辨色自测',
+          path: '/pages/index/index'
+        }
+  )
 
   useDidShow(() => {
     setReport(loadReport(requestedMode))

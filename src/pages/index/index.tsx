@@ -69,9 +69,12 @@ export default function HomePage() {
             <Text className='home-brand-subtitle'>色觉自测</Text>
           </View>
         </View>
-        <Text className='title'>选择自测方式</Text>
+        <Text className='title'>色觉自测，了解你的辨色表现</Text>
         <Text className='subtitle'>
-          通过动态小圆点图案，了解红绿色和蓝黄色辨别表现。两种模式均无需登录，结果仅保存在当前设备。
+          关注色弱、色盲相关的颜色分辨困难？通过快速或深度自测，了解红绿、蓝黄方向的辨色表现。
+        </Text>
+        <Text className='home-mode-note'>
+          两种模式均无需登录，自测记录保存在当前设备。
         </Text>
 
         <View className='mode-list'>
@@ -139,6 +142,21 @@ export default function HomePage() {
 
         <View className='notice'>
           屏幕亮度和环境光会影响结果。本测试仅用于个人自测与了解，不能作为正式体检或资格判定依据。
+        </View>
+
+        <View
+          className='color-guide-entry'
+          onClick={() =>
+            Taro.navigateTo({ url: '/pages/color-vision-guide/index' })
+          }
+        >
+          <View className='color-guide-copy'>
+            <Text className='color-guide-title'>了解色弱、色盲与辨色自测</Text>
+            <Text className='color-guide-description'>
+              了解测试方式、结果含义和屏幕自测的适用范围
+            </Text>
+          </View>
+          <Text className='color-guide-arrow'>→</Text>
         </View>
 
         <HomeAdSlot />

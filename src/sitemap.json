@@ -1,0 +1,17 @@
+{
+  "desc": "只允许微信搜索收录公开介绍页面，保护测试过程和个人结果页面",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "pages/index/index"
+    },
+    {
+      "action": "allow",
+      "page": "pages/color-vision-guide/index"
+    },
+    {
+      "action": "disallow",
+      "page": "*"
+    }
+  ]
+}

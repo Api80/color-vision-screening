@@ -1,3 +1,4 @@
 export default definePageConfig({
-  navigationBarTitleText: '自测结果'
+  navigationBarTitleText: '自测结果',
+  enableShareAppMessage: true
 })

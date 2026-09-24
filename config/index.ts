@@ -4,11 +4,15 @@ import prodConfig from './prod'
 
 export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
   const h5PublicPath = process.env.H5_PUBLIC_PATH || '/'
+  const targetPlatform = process.env.TARO_ENV || 'h5'
   const adUnitIds = {
     weappHome: process.env.TARO_APP_WEAPP_HOME_AD_UNIT_ID || '',
     weappRewarded: process.env.TARO_APP_WEAPP_REWARDED_AD_UNIT_ID || '',
     ttHome: process.env.TARO_APP_TT_HOME_AD_UNIT_ID || '',
     ttRewarded: process.env.TARO_APP_TT_REWARDED_AD_UNIT_ID || ''
+  }
+  const shareTemplateIds = {
+    tt: process.env.TARO_APP_TT_SHARE_TEMPLATE_ID || ''
   }
 
   const baseConfig: UserConfigExport<'webpack5'> = {
@@ -21,7 +25,7 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
       828: 1.81 / 2
     },
     sourceRoot: 'src',
-    outputRoot: `dist/${process.env.TARO_ENV || 'h5'}`,
+    outputRoot: `dist/${targetPlatform}`,
     framework: 'react',
     compiler: 'webpack5',
     cache: {
@@ -35,11 +39,21 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
     alias: {
       '@': require('path').resolve(__dirname, '..', 'src')
     },
+    copy: {
+      patterns: [
+        {
+          from: require('path').resolve(__dirname, '..', 'src', 'sitemap.json'),
+          to: `dist/${targetPlatform}/sitemap.json`
+        }
+      ],
+      options: {}
+    },
     defineConstants: {
       __WEAPP_HOME_AD_UNIT_ID__: JSON.stringify(adUnitIds.weappHome),
       __WEAPP_REWARDED_AD_UNIT_ID__: JSON.stringify(adUnitIds.weappRewarded),
       __TT_HOME_AD_UNIT_ID__: JSON.stringify(adUnitIds.ttHome),
-      __TT_REWARDED_AD_UNIT_ID__: JSON.stringify(adUnitIds.ttRewarded)
+      __TT_REWARDED_AD_UNIT_ID__: JSON.stringify(adUnitIds.ttRewarded),
+      __TT_SHARE_TEMPLATE_ID__: JSON.stringify(shareTemplateIds.tt)
     },
     mini: {
       postcss: {

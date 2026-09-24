@@ -39,6 +39,14 @@
   margin-top: 40rpx;
 }
 
+.home-mode-note {
+  display: block;
+  margin-top: 16rpx;
+  color: var(--muted);
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+
 .mode-card {
   padding: 28rpx;
   border: 2rpx solid var(--line);
@@ -60,6 +68,47 @@
 .mode-description,
 .mode-history {
   display: block;
+}
+
+.color-guide-entry {
+  display: flex;
+  margin-top: 22rpx;
+  padding: 24rpx 26rpx;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  border: 2rpx solid var(--line);
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.color-guide-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.color-guide-title,
+.color-guide-description {
+  display: block;
+}
+
+.color-guide-title {
+  color: var(--ink);
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.color-guide-description {
+  margin-top: 7rpx;
+  color: var(--muted);
+  font-size: 21rpx;
+  line-height: 1.5;
+}
+
+.color-guide-arrow {
+  color: var(--brand-dark);
+  font-size: 34rpx;
+  font-weight: 600;
 }
 
 .mode-title {
@@ -120,6 +169,11 @@
 }
 
 @media (min-width: 760PX) {
+  .home-mode-note {
+    margin-top: 12PX;
+    font-size: 14PX;
+  }
+
   .home-page {
     padding-top: 50PX;
   }
@@ -188,5 +242,24 @@
   .mode-history {
     margin-top: 14PX;
     font-size: 13PX;
+  }
+
+  .color-guide-entry {
+    margin-top: 18PX;
+    padding: 18PX 20PX;
+    border-radius: 16PX;
+  }
+
+  .color-guide-title {
+    font-size: 15PX;
+  }
+
+  .color-guide-description {
+    margin-top: 5PX;
+    font-size: 13PX;
+  }
+
+  .color-guide-arrow {
+    font-size: 22PX;
   }
 }
